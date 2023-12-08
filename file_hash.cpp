@@ -3,7 +3,7 @@ namespace fs = std::filesystem;
 
 // 指定目录路径建立哈希表
 void 
-create_file_hash_table(const std::string directory_path, 
+update_file_hash_table(const std::string directory_path, 
     std::map<std::string, std::string>& file_name_hash)
 {
     unsigned char* file_data_buf = nullptr;
@@ -32,9 +32,7 @@ void
 show_file_hash_table(const std::map<std::string, std::string>& file_name_hash)
 {
     for (auto it : file_name_hash)
-    {
         printf("{ %-16s : %s }\n", it.first.c_str(), it.second.c_str());
-    }
 
 }
 
@@ -48,7 +46,8 @@ create_req_file_hash_table(const std::map<std::string, std::string>& file_name_h
     //iter1 != map1.end()
     // myMap.erase(2) 删除key==2的元素 
     std::map<std::string, std::string> temp;
-    temp = file_name_hash_c.size() >= file_name_hash_s.size() ? file_name_hash_c : file_name_hash_s;
+    //temp = file_name_hash_c.size() >= file_name_hash_s.size() ? file_name_hash_c : file_name_hash_s;
+    temp = file_name_hash_s;
     req_file_name_hash = temp;
 
     for (auto it_temp : temp)

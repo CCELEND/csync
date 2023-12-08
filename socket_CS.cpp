@@ -32,7 +32,6 @@ void server_fun()
 
 	// 处理来自客户端的同步请求
 	file_sync_s_fun(accept_fd, sync_data_key, sync_data_iv);
-	printf("[+] Sync successful!");
 
 	closesocket(accept_fd);
 	closesocket(listen_fd);
@@ -56,7 +55,6 @@ void client_fun()
 
 	// 文件数据同步
 	file_sync_c_fun(connect_fd, sync_data_key, sync_data_iv);
-	printf("[+] Sync successful!");
 
 	closesocket(connect_fd);
 }

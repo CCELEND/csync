@@ -5,7 +5,7 @@
 #include "SHA_need.h"
 #include "file_data.h"
 
-void create_file_hash_table(const std::string directory_path, 
+void update_file_hash_table(const std::string directory_path,
 	std::map<std::string, std::string>& file_name_hash);
 
 void show_file_hash_table(const std::map<std::string, std::string>& file_name_hash);

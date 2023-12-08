@@ -191,7 +191,24 @@ recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, unsigned char* file_data_buf,
 }
 
 void
-send_KDATA_HASH_REQUEST()
+send_sync_start(SOCKET& connect_fd)
 {
+    struct file_sync file_sync_head { 0 };
+    int file_sync_head_size = sizeof(struct file_sync);
+    file_sync_head.type = 5;
+    file_sync_head.raw_size = 0;
+    file_sync_head.encrypted_size = 0;
 
+    send_all(connect_fd, (char*)&file_sync_head, file_sync_head_size);
+}
+void
+send_sync_quit(SOCKET& connect_fd)
+{
+    struct file_sync file_sync_head { 0 };
+    int file_sync_head_size = sizeof(struct file_sync);
+    file_sync_head.type = 9;
+    file_sync_head.raw_size = 0;
+    file_sync_head.encrypted_size = 0;
+
+    send_all(connect_fd, (char*)&file_sync_head, file_sync_head_size);
 }

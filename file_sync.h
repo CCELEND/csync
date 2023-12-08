@@ -5,7 +5,7 @@
 #include "file_hash.h"
 #include "tcp_socket.h"
 
-// 客户端 4: 文件路径，5: 文件 hash 表请求，7: 缺少文件的 hash
+// 客户端 4: 文件路径，5: 同步开始，7: 缺少文件的 hash，9: 同步结束
 // 服务器 6: 文件 hash 表，8: 文件基本信息
 struct file_sync
 {
@@ -62,6 +62,9 @@ struct sync_file_info* get_file_info_to_struct(const std::string& directory_path
 	int* list_size);
 
 // 客户端过程
+void send_sync_start(SOCKET& connect_fd);
+void send_sync_quit(SOCKET& connect_fd);
+
 void send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
 
