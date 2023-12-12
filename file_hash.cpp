@@ -46,7 +46,6 @@ create_req_file_hash_table(const std::map<std::string, std::string>& file_name_h
     //iter1 != map1.end()
     // myMap.erase(2) É¾³ýkey==2µÄÔªËØ 
     std::map<std::string, std::string> temp;
-    //temp = file_name_hash_c.size() >= file_name_hash_s.size() ? file_name_hash_c : file_name_hash_s;
     temp = file_name_hash_s;
     req_file_name_hash = temp;
 

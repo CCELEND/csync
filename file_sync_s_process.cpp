@@ -117,8 +117,16 @@ recv_KDATA_REQ_HASH_TABLE(SOCKET& accept_fd, std::map<std::string, std::string>&
 
         struct_to_file_name_hash_map(file_name_hash_table, req_file_name_hash, num);
 
-        printf("[+] Remote request file hash table:\n");
-        show_file_hash_table(req_file_name_hash);
+        //if (req_file_name_hash.size() == 0)
+        //{
+        //    printf("[+] Client synchronized.\n");
+        //}
+        //else
+        //{
+        //    printf("[+] Remote request file hash table:\n");
+        //    show_file_hash_table(req_file_name_hash);
+        //}
+       
         printf("\n");
 
         delete[] decrypted_file_name_hash_table;

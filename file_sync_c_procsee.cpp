@@ -69,9 +69,9 @@ recv_KDATA_HASH_TABLE(SOCKET& connect_fd, std::map<std::string, std::string>& fi
 
         struct_to_file_name_hash_map(file_name_hash_table, file_name_hash, num);
 
-        printf("[+] Remote file hash table:\n");
-        show_file_hash_table(file_name_hash);
-        printf("\n");
+        //printf("[+] Remote file hash table:\n");
+        //show_file_hash_table(file_name_hash);
+        //printf("\n");
 
         delete[] decrypted_file_name_hash_table;
     }
@@ -107,7 +107,7 @@ send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::s
         &file_sync_packet_size);
 
     // 发送 data AES 加密缺少的文件哈希表
-    printf("[*] Sending request file hash table...\n\n");
+    printf("[*] Sending request file hash table...\n");
     send_all(connect_fd, (char*)file_sync_packet, file_sync_packet_size);
 
 
