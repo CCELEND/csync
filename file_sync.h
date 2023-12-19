@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include "RSA_AES_key_agreement.h"
 #include "file_data.h"
 #include "file_hash.h"
@@ -39,27 +40,29 @@ struct file_name_hash_table
 void file_sync_c_fun(SOCKET& connect_fd, const unsigned char* sync_data_key, const unsigned char* sync_data_iv);
 void file_sync_s_fun(SOCKET& accept_fd,  const unsigned char* sync_data_key, const unsigned char* sync_data_iv);
 
-unsigned char* generate_file_sync_packet(
+std::tuple<unsigned char*, int>
+generate_file_sync_packet(
 	int type, int raw_size, int encrypted_size,
-	unsigned char* encrypted_data,
-	int* packet_size);
+	unsigned char* encrypted_data);
 
-unsigned char* generate_file_block_packet(
+std::tuple<unsigned char*, int>
+generate_file_block_packet(
 	int block_index, int raw_block_size, int encrypted_block_size,
-	unsigned char* encrypted_data,
-	int* packet_size);
+	unsigned char* encrypted_data);
 
-struct file_name_hash_table* file_name_hash_map_to_struct(
-	const std::map<std::string, std::string>& file_name_hash,
-	int* size);
+std::tuple<struct file_name_hash_table*, int>
+file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash);
 
 void struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_hash_table,
 	std::map<std::string, std::string>& file_name_hash,
 	int num);
 
-struct sync_file_info* get_file_info_to_struct(const std::string& directory_path,
-	const std::map<std::string, std::string>& req_file_name_hash,
-	int* list_size);
+std::tuple<struct sync_file_info*, int>
+get_file_info_to_struct(const std::string& directory_path,
+	const std::map<std::string, std::string>& req_file_name_hash);
+//struct sync_file_info* get_file_info_to_struct(const std::string& directory_path,
+//	const std::map<std::string, std::string>& req_file_name_hash,
+//	int* list_size);
 
 // 客户端过程
 void send_sync_start(SOCKET& connect_fd);

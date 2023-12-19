@@ -1,10 +1,9 @@
 #include "file_sync.h"
 
-unsigned char*
+std::tuple<unsigned char*, int>
 generate_file_sync_packet(
     int type, int raw_size, int encrypted_size,
-    unsigned char* encrypted_data,
-    int* packet_size)
+    unsigned char* encrypted_data)
 {
     struct file_sync file_sync_head { 0 };
     int file_sync_head_size = sizeof(struct file_sync);
@@ -23,16 +22,16 @@ generate_file_sync_packet(
         &file_sync_head, file_sync_head_size);
     memcpy(file_sync_packet + file_sync_head_size,
         encrypted_data, file_sync_data_size);
-    
-    *packet_size = file_sync_packet_size;
-    return file_sync_packet;
+
+    std::tuple<unsigned char*, int> result;
+    result = std::make_tuple(file_sync_packet, file_sync_packet_size);
+    return result;
 }
 
-unsigned char*
+std::tuple<unsigned char*, int>
 generate_file_block_packet(
     int block_index, int raw_block_size, int encrypted_block_size,
-    unsigned char* encrypted_data,
-    int* packet_size)
+    unsigned char* encrypted_data)
 {
     struct sync_file_data file_block_head { 0 };
     int file_block_head_size = sizeof(struct sync_file_data);
@@ -52,15 +51,16 @@ generate_file_block_packet(
     memcpy(file_block_packet + file_block_head_size,
         encrypted_data, file_block_data_size);
 
-    *packet_size = file_block_packet_size;
-    return file_block_packet;
+    std::tuple<unsigned char*, int> result;
+    result = std::make_tuple(file_block_packet, file_block_packet_size);
+    return result;
+
 }
 
 
 // map 值提取到结构体
-struct file_name_hash_table* 
-file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash, 
-        int* size)
+std::tuple<struct file_name_hash_table*, int> 
+file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash)
 {
     int num = file_name_hash.size();
     int file_name_hash_table_size = num * sizeof(struct file_name_hash_table);
@@ -73,14 +73,15 @@ file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name
     for (auto it : file_name_hash)
     {
         len = it.first.length();
-        if (len > 63) return nullptr;
+        if (len > 63) return std::make_tuple(nullptr, 0);
         memcpy(file_name_hash_table[i].name, it.first.c_str(), len);
         memcpy(file_name_hash_table[i].hash, it.second.c_str(), 64);
         i++;
     }
 
-    *size = file_name_hash_table_size;
-    return file_name_hash_table;
+    std::tuple<struct file_name_hash_table*, int> result;
+    result = std::make_tuple(file_name_hash_table, file_name_hash_table_size);
+    return result;
 }
 
 // 结构体值提取到 map
@@ -105,10 +106,10 @@ void struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_h
 
 }
 
-struct sync_file_info*
+std::tuple<struct sync_file_info*, int>
+//struct sync_file_info*
 get_file_info_to_struct(const std::string& directory_path, 
-    const std::map<std::string, std::string>& req_file_name_hash,
-    int* list_size)
+    const std::map<std::string, std::string>& req_file_name_hash)
 {
     int num = req_file_name_hash.size();
     int file_info_list_size = num * sizeof(struct sync_file_info);
@@ -144,8 +145,13 @@ get_file_info_to_struct(const std::string& directory_path,
         memcpy(file_info_list[i].file_hash, file_hash.c_str(), 64);
         i++;
     }
-    *list_size = file_info_list_size;
-    return file_info_list;
+
+    std::tuple<struct sync_file_info*, int> result;
+    result = std::make_tuple(file_info_list, file_info_list_size);
+    return result;
+
+    //*list_size = file_info_list_size;
+    //return file_info_list;
 }
 
 static void
@@ -348,9 +354,10 @@ file_sync_s_fun(SOCKET& accept_fd,
                 printf("\n");
 
                 // 获取对应文件信息，建立文件信息表
-                int num, file_info_list_size;
-                struct sync_file_info* file_info_list;
-                file_info_list = get_file_info_to_struct(directory_path, req_file_name_hash, &file_info_list_size);
+                std::tuple<struct sync_file_info*, int> para = get_file_info_to_struct(directory_path, req_file_name_hash);
+                int num, file_info_list_size = std::get<1>(para);;
+                struct sync_file_info* file_info_list = std::get<0>(para);
+
                 num = file_info_list_size / sizeof(struct sync_file_info);
                 //printf("[+] File info:\n");
                 //for (int i = 0; i < num; i++)
