@@ -54,7 +54,6 @@ generate_file_block_packet(
     std::tuple<unsigned char*, int> result;
     result = std::make_tuple(file_block_packet, file_block_packet_size);
     return result;
-
 }
 
 
@@ -62,7 +61,7 @@ generate_file_block_packet(
 std::tuple<struct file_name_hash_table*, int> 
 file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash)
 {
-    int num = file_name_hash.size();
+    size_t num = file_name_hash.size();
     int file_name_hash_table_size = num * sizeof(struct file_name_hash_table);
     struct file_name_hash_table* file_name_hash_table;
     file_name_hash_table = new struct file_name_hash_table[num];
@@ -74,6 +73,7 @@ file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name
     {
         len = it.first.length();
         if (len > 63) return std::make_tuple(nullptr, 0);
+
         memcpy(file_name_hash_table[i].name, it.first.c_str(), len);
         memcpy(file_name_hash_table[i].hash, it.second.c_str(), 64);
         i++;
@@ -85,13 +85,15 @@ file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name
 }
 
 // 结构体值提取到 map
-void struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_hash_table,
+void 
+struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_hash_table,
     std::map<std::string, std::string>& file_name_hash,
     int num)
 {
     std::string file_name, file_hash;
     unsigned char name[65] = { 0 };
     unsigned char hash[65] = { 0 };
+
     for (int i = 0; i < num; i++)
     {
         file_name = "";
@@ -107,7 +109,6 @@ void struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_h
 }
 
 std::tuple<struct sync_file_info*, int>
-//struct sync_file_info*
 get_file_info_to_struct(const std::string& directory_path, 
     const std::map<std::string, std::string>& req_file_name_hash)
 {
@@ -149,9 +150,6 @@ get_file_info_to_struct(const std::string& directory_path,
     std::tuple<struct sync_file_info*, int> result;
     result = std::make_tuple(file_info_list, file_info_list_size);
     return result;
-
-    //*list_size = file_info_list_size;
-    //return file_info_list;
 }
 
 static void
@@ -354,9 +352,10 @@ file_sync_s_fun(SOCKET& accept_fd,
                 printf("\n");
 
                 // 获取对应文件信息，建立文件信息表
-                std::tuple<struct sync_file_info*, int> para = get_file_info_to_struct(directory_path, req_file_name_hash);
-                int num, file_info_list_size = std::get<1>(para);;
-                struct sync_file_info* file_info_list = std::get<0>(para);
+                std::tuple<struct sync_file_info*, int> file_info_list_info;
+                file_info_list_info = get_file_info_to_struct(directory_path, req_file_name_hash);
+                struct sync_file_info* file_info_list = std::get<0>(file_info_list_info);
+                int num, file_info_list_size = std::get<1>(file_info_list_info);
 
                 num = file_info_list_size / sizeof(struct sync_file_info);
                 //printf("[+] File info:\n");
@@ -371,6 +370,7 @@ file_sync_s_fun(SOCKET& accept_fd,
                 unsigned char* file_data_buf, * file_block;
                 std::string file_path;
                 int file_block_size;
+
                 // 发送文件基本信息头和文件块
                 for (int i = 0; i < num; i++)
                 {
@@ -379,19 +379,24 @@ file_sync_s_fun(SOCKET& accept_fd,
                         &data_aes_encrypt_key, sync_data_iv);
                     // 读取文件数据到缓冲区
                     file_path = directory_path + "\\" + std::string((char*)file_info_list[i].file_name);
-                    file_data_buf = load_data_from_file(file_path.c_str(), &file_size);
+
+                    std::tuple<unsigned char*, size_t> file_info;
+                    file_info = load_data_from_file(file_path.c_str());
+                    file_data_buf = std::get<0>(file_info);
+                    file_size = std::get<1>(file_info);
 
                     printf("[*] Sending [ %s ] file block...\n", file_info_list[i].file_name);
-                    for (int j = 0; j < file_info_list[i].block_total; j++)
+                    for (int file_block_index = 0; file_block_index < file_info_list[i].block_total; file_block_index++)
                     {
-                        if (j == file_info_list[i].block_total - 1)
-                            file_block_size = int(file_size - j * 8000);
+                        if (file_block_index == file_info_list[i].block_total - 1)
+                            file_block_size = int(file_size - file_block_index * 8000);
                         else
                             file_block_size = 8000;
+                        file_block = file_data_buf + file_block_index * 8000;
 
-                        file_block = file_data_buf + j * 8000;
                         // 开始发送文件块
-                        send_KDATA_FILE_BLOCK(accept_fd, file_block, file_block_size, j,
+                        send_KDATA_FILE_BLOCK(accept_fd, 
+                            file_block, file_block_size, file_block_index,
                             &data_aes_encrypt_key, sync_data_iv);
                     }
 

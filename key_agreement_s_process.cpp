@@ -1,3 +1,4 @@
+
 #include "RSA_AES_key_agreement.h"
 
 void 
@@ -26,6 +27,7 @@ recv_KROOT_PUB_KEY(SOCKET& accept_fd, std::string& pub_key,
         memset(decrypted_pub_key, 0, encrypted_pub_key_size);
 
         recv_all(accept_fd, (char*)recv_buf, encrypted_pub_key_size);
+
         // root AES 解密获得公钥
         aes_cbc_decrypt(recv_buf, decrypted_pub_key,
             encrypted_pub_key_size, root_aes_decrypt_key, root_iv);

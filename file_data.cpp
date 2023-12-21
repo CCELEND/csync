@@ -1,15 +1,17 @@
 
 #include "file_data.h"
 
-unsigned char*
-load_data_from_file(const char* input_file_name, size_t* file_size_p)
+std::tuple<unsigned char*, size_t>
+load_data_from_file(const char* input_file_name)
 {
+    std::tuple<unsigned char*, size_t> result;
+
     std::ifstream in_file(input_file_name, std::ios::binary);
     if (!in_file.is_open())
     {
-        perror("Error opening file");
-        *file_size_p = 0;
-        return NULL;
+        perror("Error opening file!");
+        result = std::make_tuple(nullptr, 0);
+        return result;
     }
 
     size_t file_size;
@@ -24,8 +26,8 @@ load_data_from_file(const char* input_file_name, size_t* file_size_p)
     in_file.read(reinterpret_cast<char*>(file_data_buf), file_size);
     in_file.close();
 
-    *file_size_p = file_size;
-    return file_data_buf;
+    result = std::make_tuple(file_data_buf, file_size);
+    return result;
 }
 
 void

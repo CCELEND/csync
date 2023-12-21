@@ -12,15 +12,15 @@
 #define data_key_bytes_length  (data_key_bits_length/8)
 
 // AES_key.cpp
+size_t AES_block_alignment(size_t data_size);
 int generate_aes_key(unsigned char* key, int key_bytes_length);
 int generate_aes_IV(unsigned char* iv);
 void save_aes_key_to_file(const char* key_file_name, const unsigned char* key, size_t key_length);
 void load_aes_key_from_file(const char* key_file_name, unsigned char* key, size_t key_length);
 void save_aes_iv_to_file(const char* iv_file_name, const unsigned char* iv);
 void load_aes_iv_from_file(const char* iv_file_name, unsigned char* iv);
-int set_aes_enc_dec_key(const unsigned char* key, int key_bits_length,
+int  set_aes_enc_dec_key(const unsigned char* key, int key_bits_length,
     AES_KEY* aes_encrypt_key, AES_KEY* aes_decrypt_key);
-size_t AES_block_alignment(size_t data_size);
 
 // AES_key_enc_dec.cpp
 // encrypted_data: 输出数据，能够容纳下输入数据，且长度必须是16字节的倍数,

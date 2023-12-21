@@ -8,7 +8,8 @@ using namespace std;
 
 void server_fun()
 {
-	SOCKET listen_fd = create_server_socket();	// 创建服务器 socket 该 socket 仅用于监听）
+	// 创建服务器 socket 该 socket 仅用于监听）
+	SOCKET listen_fd = create_server_socket();	
 	cout << "[*] Server socket create success, waiting connect..." << endl;
 
 	// 等待客户端连接
@@ -16,7 +17,8 @@ void server_fun()
 	caddr.sin_family = AF_INET;
 	int caddrlen = sizeof(sockaddr_in);
 
-	SOCKET accept_fd = accept(listen_fd, (sockaddr*)&caddr, &caddrlen);	// 该 socket 用于与客户端进行连接
+	// 该 socket 用于与客户端进行连接
+	SOCKET accept_fd = accept(listen_fd, (sockaddr*)&caddr, &caddrlen);	
 	if (accept_fd == INVALID_SOCKET)
 	{
 		err("Accept");

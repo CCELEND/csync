@@ -14,10 +14,13 @@ update_file_hash_table(const std::string directory_path,
     for (const auto& entry : fs::directory_iterator(directory_path))
     {
         file_name = entry.path().filename().string();
-        //printf("[+] File name: %s\n", file_name.c_str());
         file_path = directory_path + "\\" + file_name;
 
-        file_data_buf = load_data_from_file(file_path.c_str(), &file_size);
+        std::tuple<unsigned char*, size_t> file_info;
+        file_info = load_data_from_file(file_path.c_str());
+        file_data_buf = std::get<0>(file_info);
+        file_size = std::get<1>(file_info);
+
         file_hash = sha_256(file_data_buf, file_size, hash);
         //printf("[+] File hash: %s\n", file_hash.c_str());
 
@@ -25,14 +28,15 @@ update_file_hash_table(const std::string directory_path,
 
         delete[] file_data_buf;
     }
-
 }
 
 void
 show_file_hash_table(const std::map<std::string, std::string>& file_name_hash)
 {
     for (auto it : file_name_hash)
+    {
         printf("{ %-16s : %s }\n", it.first.c_str(), it.second.c_str());
+    }
 
 }
 
@@ -42,9 +46,6 @@ create_req_file_hash_table(const std::map<std::string, std::string>& file_name_h
     const std::map<std::string, std::string>& file_name_hash_s,
     std::map<std::string, std::string>& req_file_name_hash)
 {
-    //auto iter1 = map1.begin();
-    //iter1 != map1.end()
-    // myMap.erase(2) 删除key==2的元素 
     std::map<std::string, std::string> temp;
     temp = file_name_hash_s;
     req_file_name_hash = temp;
@@ -55,7 +56,7 @@ create_req_file_hash_table(const std::map<std::string, std::string>& file_name_h
         {
             if (it_temp.second == it_c.second) 
             {
-                //printf("{ %s }\n", it_c.second.c_str());
+                //  删除key==it_temp.first的元素
                 req_file_name_hash.erase(it_temp.first);
             }
         }

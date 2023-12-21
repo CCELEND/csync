@@ -72,9 +72,9 @@ generate_key_agreement_s_packet(
 }
 
 
-
 void
-key_agreement_c_fun(SOCKET& connect_fd, unsigned char* sync_data_key, unsigned char* sync_data_iv)
+key_agreement_c_fun(SOCKET& connect_fd, 
+    unsigned char* sync_data_key, unsigned char* sync_data_iv)
 {
     printf("[*] Generating RSA negotiation key pairs...\n");
     std::string pub_key;
@@ -135,7 +135,8 @@ key_agreement_c_fun(SOCKET& connect_fd, unsigned char* sync_data_key, unsigned c
 }
 
 void
-key_agreement_s_fun(SOCKET& accept_fd, unsigned char* sync_data_key, unsigned char* sync_data_iv)
+key_agreement_s_fun(SOCKET& accept_fd, 
+    unsigned char* sync_data_key, unsigned char* sync_data_iv)
 {
     printf("[*] Loading AES root key and iv...\n");
     // ╪сть root key нд╪Ч

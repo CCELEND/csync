@@ -20,14 +20,9 @@ send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
     std::tuple<unsigned char*, int> generate_file_sync_packet_ret = generate_file_sync_packet(
         4, directory_path_length, directory_path_encrypted_data_size,
         encrypted_directory_path);
-    
-    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
     unsigned char* file_sync_packet = std::get<0>(generate_file_sync_packet_ret);
-
-    //file_sync_packet = generate_file_sync_packet(
-    //    4, directory_path_length, directory_path_encrypted_data_size,
-    //    encrypted_directory_path,
-    //    &file_sync_packet_size);
+    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
+    
 
     // 发送 data AES 加密文件路径
     printf("[*] Sending synchronized file directory...\n\n");
@@ -35,7 +30,6 @@ send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
 
     delete[] encrypted_directory_path;
     delete[] file_sync_packet;
-
 }
 
 void
@@ -83,13 +77,9 @@ send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::s
     const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv)
 {
     std::tuple<struct file_name_hash_table*, int> para = file_name_hash_map_to_struct(req_file_name_hash);
-
-    int file_name_hash_table_size = std::get<1>(para);
     struct file_name_hash_table* file_name_hash_table = std::get<0>(para);
-
-    //file_name_hash_table = file_name_hash_map_to_struct(req_file_name_hash,
-    //    &file_name_hash_table_size);
-
+    int file_name_hash_table_size = std::get<1>(para);
+    
     // 分配 data AES 加密后缺少的文件哈希表的缓冲区
     unsigned char* encrypted_file_name_hash_table;
     encrypted_file_name_hash_table = new unsigned char[file_name_hash_table_size];
@@ -102,24 +92,16 @@ send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::s
     std::tuple<unsigned char*, int> generate_file_sync_packet_ret = generate_file_sync_packet(
         7, file_name_hash_table_size, file_name_hash_table_size,
         encrypted_file_name_hash_table);
-   
-    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
     unsigned char* file_sync_packet = std::get<0>(generate_file_sync_packet_ret);
-
-    //file_sync_packet = generate_file_sync_packet(
-    //    7, file_name_hash_table_size, file_name_hash_table_size,
-    //    encrypted_file_name_hash_table,
-    //    &file_sync_packet_size);
+    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
 
     // 发送 data AES 加密缺少的文件哈希表
     printf("[*] Sending request file hash table...\n");
     send_all(connect_fd, (char*)file_sync_packet, file_sync_packet_size);
 
-
     delete[] file_name_hash_table;
     delete[] encrypted_file_name_hash_table;
     delete[] file_sync_packet;
-
 }
 
 void
@@ -192,7 +174,6 @@ recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, unsigned char* file_data_buf,
         raw_file_block_size);
 
     delete[] decrypted_file_block;
-
 }
 
 void
