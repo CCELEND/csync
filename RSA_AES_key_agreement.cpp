@@ -15,11 +15,10 @@ generate_random_bytes(unsigned char* randoms, int random_bytes_length)
     return 0;
 }
 
-unsigned char* 
+std::tuple<unsigned char*, int>
 generate_key_agreement_c_packet(
     int c_type, int raw_data_size, int encrypted_data_size,
-    unsigned char* encrypted_data,
-    int* packet_size)
+    unsigned char* encrypted_data)
 {
     struct key_agreement_c key_agreement_c_head { 0 };
     int key_agreement_c_head_size = sizeof(struct key_agreement_c);
@@ -39,16 +38,15 @@ generate_key_agreement_c_packet(
     memcpy(key_agreement_c_packet + key_agreement_c_head_size,
         encrypted_data, key_agreement_c_data_size);
 
-    *packet_size = key_agreement_c_packet_size;
-    return key_agreement_c_packet;
-
+    std::tuple<unsigned char*, int> result;
+    result = std::make_tuple(key_agreement_c_packet, key_agreement_c_packet_size);
+    return result;
 }
 
-unsigned char*
+std::tuple<unsigned char*, int>
 generate_key_agreement_s_packet(
     int s_type, int size,
-    unsigned char* encrypted_data,
-    int* packet_size)
+    unsigned char* encrypted_data)
 {
     struct key_agreement_s key_agreement_s_head { 0 };
     int key_agreement_s_head_size = sizeof(struct key_agreement_s);
@@ -67,10 +65,10 @@ generate_key_agreement_s_packet(
     memcpy(key_agreement_s_packet + key_agreement_s_head_size,
         encrypted_data, key_agreement_s_data_size);
 
-    *packet_size = key_agreement_s_packet_size;
-    return key_agreement_s_packet;
+    std::tuple<unsigned char*, int> result;
+    result = std::make_tuple(key_agreement_s_packet, key_agreement_s_packet_size);
+    return result;
 }
-
 
 void
 key_agreement_c_fun(SOCKET& connect_fd, 
@@ -91,14 +89,16 @@ key_agreement_c_fun(SOCKET& connect_fd,
     load_aes_iv_from_file("root_iv.bin", root_iv);
     // 设置 root AES 加密解密密钥
     AES_KEY root_aes_encrypt_key, root_aes_decrypt_key;
-    set_aes_enc_dec_key(root_key, root_key_bits_length, &root_aes_encrypt_key, &root_aes_decrypt_key);
+    set_aes_enc_dec_key(root_key, root_key_bits_length, 
+        &root_aes_encrypt_key, &root_aes_decrypt_key);
 
     unsigned char* recv_buf;
     recv_buf = new unsigned char[0x2000];
     memset(recv_buf, 0, 0x2000);
 
     // 发送 root AES 加密的公钥
-    send_KROOT_PUB_KEY(connect_fd, pub_key, &root_aes_encrypt_key, root_iv);
+    send_KROOT_PUB_KEY(connect_fd, pub_key, 
+        &root_aes_encrypt_key, root_iv);
 
     // 接收来自服务器的用公钥加密的随机序列
     unsigned char verify_randoms[0x10] = { 0 };
@@ -107,7 +107,7 @@ key_agreement_c_fun(SOCKET& connect_fd,
     for (int i = 0; i < 0x10; ++i) {
         printf("%02x", verify_randoms[i]);
     }
-    std::cout << std::endl;
+    printf("\n");
 
     // 发送私钥加密的验证随机序列
     send_PRI_KET_verify_randoms(connect_fd, verify_randoms, pri_key);
@@ -121,12 +121,12 @@ key_agreement_c_fun(SOCKET& connect_fd,
     for (int i = 0; i < 0x10; ++i) {
         printf("%02x", data_key[i]);
     }
-    std::cout << std::endl;
+    printf("\n");
     printf("[+] AES IV: ");
     for (int i = 0; i < 0x10; ++i) {
         printf("%02x", data_iv[i]);
     }
-    std::cout << std::endl;
+    printf("\n");
 
     memcpy(sync_data_key, data_key, data_key_bytes_length);
     memcpy(sync_data_iv, data_iv, AES_BLOCK_SIZE);

@@ -2,7 +2,8 @@
 #include "RSA_AES_key_agreement.h"
 
 void 
-recv_KROOT_PUB_KEY(SOCKET& accept_fd, std::string& pub_key,
+recv_KROOT_PUB_KEY(SOCKET& accept_fd, 
+    std::string& pub_key,
     unsigned char* recv_buf,
     const AES_KEY* root_aes_decrypt_key, const unsigned char* root_iv)
 {
@@ -41,7 +42,8 @@ recv_KROOT_PUB_KEY(SOCKET& accept_fd, std::string& pub_key,
 }
 
 void 
-send_PUB_KET_randoms(SOCKET& accept_fd, const unsigned char* randoms,
+send_PUB_KET_randoms(SOCKET& accept_fd, 
+    const unsigned char* randoms,
     const std::string& pub_key)
 {
     printf("[*] Generating public key encrypted random sequence...\n");
@@ -55,13 +57,12 @@ send_PUB_KET_randoms(SOCKET& accept_fd, const unsigned char* randoms,
     RSA_pub_encrypt(randoms, encrypted_randoms, pub_key, 0x10);
 
     // 生成 key_agreement_s_packet
-    int key_agreement_s_packet_size;
-    unsigned char* key_agreement_s_packet;
-
-    key_agreement_s_packet = generate_key_agreement_s_packet(
+    std::tuple<unsigned char*, int> result;
+    result = generate_key_agreement_s_packet(
         2, encrypted_randoms_length,
-        encrypted_randoms,
-        &key_agreement_s_packet_size);
+        encrypted_randoms);
+    unsigned char* key_agreement_s_packet = std::get<0>(result);
+    int key_agreement_s_packet_size = std::get<1>(result);
 
     printf("[*] Sending public key encrypted random sequence...\n");
     // 发送公钥加密随机序列
@@ -72,7 +73,8 @@ send_PUB_KET_randoms(SOCKET& accept_fd, const unsigned char* randoms,
 }
 
 void 
-recv_PRI_KET_verify_randoms(SOCKET& accept_fd, unsigned char* verify_randoms,
+recv_PRI_KET_verify_randoms(SOCKET& accept_fd, 
+    unsigned char* verify_randoms,
     unsigned char* recv_buf,
     const std::string& pub_key)
 {
@@ -101,8 +103,8 @@ recv_PRI_KET_verify_randoms(SOCKET& accept_fd, unsigned char* verify_randoms,
     }
 }
 
-void send_PUB_KEY_KDATA_KIV(
-    SOCKET& accept_fd, const unsigned char* data_key, const unsigned char* data_iv,
+void send_PUB_KEY_KDATA_KIV(SOCKET& accept_fd, 
+    const unsigned char* data_key, const unsigned char* data_iv,
     const std::string& pub_key)
 {
     printf("[*] Generating public key encrypted AES data key and IV...\n");
@@ -133,13 +135,12 @@ void send_PUB_KEY_KDATA_KIV(
         encrypted_data_iv, encrypted_data_iv_length);
 
     // 生成 key_agreement_s_packet
-    int key_agreement_s_packet_size;
-    unsigned char* key_agreement_s_packet;
-
-    key_agreement_s_packet = generate_key_agreement_s_packet(
+    std::tuple<unsigned char*, int> result;
+    result = generate_key_agreement_s_packet(
         3, encrypted_data_key_iv_length,
-        encrypted_data_key_iv,
-        &key_agreement_s_packet_size);
+        encrypted_data_key_iv);
+    unsigned char* key_agreement_s_packet = std::get<0>(result);
+    int key_agreement_s_packet_size = std::get<1>(result);
 
     printf("[*] Sending public key encrypted AES data key and IV...\n");
     // 发送公钥加密的 data key 和 data iv

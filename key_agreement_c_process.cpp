@@ -2,7 +2,8 @@
 #include "RSA_AES_key_agreement.h"
 
 void 
-send_KROOT_PUB_KEY(SOCKET& connect_fd, const std::string& pub_key,
+send_KROOT_PUB_KEY(SOCKET& connect_fd, 
+    const std::string& pub_key,
     const AES_KEY* root_aes_encrypt_key, const unsigned char* root_iv)
 {
     int pub_key_length = pub_key.length();
@@ -21,14 +22,13 @@ send_KROOT_PUB_KEY(SOCKET& connect_fd, const std::string& pub_key,
         pub_key_length, root_aes_encrypt_key, root_iv);
 
     // 生成 key_agreement_c_packet
-    int key_agreement_c_packet_size;
-    unsigned char* key_agreement_c_packet;
-
-    key_agreement_c_packet = generate_key_agreement_c_packet(
+    std::tuple<unsigned char*, int> result;
+    result = generate_key_agreement_c_packet(
         0, pub_key_length, pub_key_encrypted_data_size,
-        encrypted_pub_key,
-        &key_agreement_c_packet_size);
-
+        encrypted_pub_key);
+    unsigned char* key_agreement_c_packet = std::get<0>(result);
+    int key_agreement_c_packet_size = std::get<1>(result);
+    
     // 发送 root AES 加密的公钥
     printf("[*] Sending RSA negotiation public key...\n");
     send_all(connect_fd, (char*)key_agreement_c_packet, key_agreement_c_packet_size);
@@ -38,7 +38,8 @@ send_KROOT_PUB_KEY(SOCKET& connect_fd, const std::string& pub_key,
 }
 
 void 
-recv_PUB_KET_randoms(SOCKET& connect_fd, unsigned char* verify_randoms,
+recv_PUB_KET_randoms(SOCKET& connect_fd, 
+    unsigned char* verify_randoms,
     unsigned char* recv_buf, 
     const std::string& pri_key)
 {
@@ -67,7 +68,8 @@ recv_PUB_KET_randoms(SOCKET& connect_fd, unsigned char* verify_randoms,
 }
 
 void 
-send_PRI_KET_verify_randoms(SOCKET& connect_fd, const unsigned char* verify_randoms,
+send_PRI_KET_verify_randoms(SOCKET& connect_fd, 
+    const unsigned char* verify_randoms,
     const std::string& pri_key)
 {
     printf("[*] Generating private key encrypted verify random sequence...\n");
@@ -81,13 +83,12 @@ send_PRI_KET_verify_randoms(SOCKET& connect_fd, const unsigned char* verify_rand
     RSA_pri_encrypt(verify_randoms, encrypted_verify_randoms, pri_key, 0x10);
 
     // 生成 key_agreement_c_packet
-    int key_agreement_c_packet_size;
-    unsigned char* key_agreement_c_packet;
-
-    key_agreement_c_packet = generate_key_agreement_c_packet(
+    std::tuple<unsigned char*, int> result;
+    result = generate_key_agreement_c_packet(
         1, 0x10, encrypted_verify_randoms_length,
-        encrypted_verify_randoms,
-        &key_agreement_c_packet_size);
+        encrypted_verify_randoms);
+    unsigned char* key_agreement_c_packet = std::get<0>(result);
+    int key_agreement_c_packet_size = std::get<1>(result);
 
     // 发送私钥加密的验证随机序列
     printf("[*] Sending private key encrypted verify random sequence...\n");
@@ -98,7 +99,8 @@ send_PRI_KET_verify_randoms(SOCKET& connect_fd, const unsigned char* verify_rand
 }
 
 void 
-recv_PUB_KEY_KDATA_KIV(SOCKET& connect_fd, unsigned char* data_key, unsigned char* data_iv,
+recv_PUB_KEY_KDATA_KIV(SOCKET& connect_fd, 
+    unsigned char* data_key, unsigned char* data_iv,
     unsigned char* recv_buf,
     const std::string& pri_key)
 {

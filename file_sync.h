@@ -37,8 +37,10 @@ struct file_name_hash_table
 	unsigned char hash[64];
 };
 
-void file_sync_c_fun(SOCKET& connect_fd, const unsigned char* sync_data_key, const unsigned char* sync_data_iv);
-void file_sync_s_fun(SOCKET& accept_fd,  const unsigned char* sync_data_key, const unsigned char* sync_data_iv);
+void file_sync_c_fun(SOCKET& connect_fd, 
+	const unsigned char* sync_data_key, const unsigned char* sync_data_iv);
+void file_sync_s_fun(SOCKET& accept_fd,  
+	const unsigned char* sync_data_key, const unsigned char* sync_data_iv);
 
 // 生成 file_sync_packet 头包
 std::tuple<unsigned char*, int>

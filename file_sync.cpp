@@ -242,7 +242,8 @@ file_sync_c_fun(SOCKET& connect_fd,
 {
     // 设置 data AES 加密解密密钥
     AES_KEY data_aes_encrypt_key, data_aes_decrypt_key;
-    set_aes_enc_dec_key(sync_data_key, data_key_bits_length, &data_aes_encrypt_key, &data_aes_decrypt_key);
+    set_aes_enc_dec_key(sync_data_key, data_key_bits_length, 
+        &data_aes_encrypt_key, &data_aes_decrypt_key);
 
     // 输入本地同步路径
     std::string local_directory_path;
@@ -276,7 +277,8 @@ file_sync_c_fun(SOCKET& connect_fd,
         {
             if (you_operate == "SYNC")
             {
-                SYNC_C(connect_fd, local_directory_path, target_directory_path, recv_buf,
+                SYNC_C(connect_fd, local_directory_path, target_directory_path, 
+                    recv_buf,
                     &data_aes_encrypt_key, &data_aes_decrypt_key, sync_data_iv);
             }
             else
@@ -300,7 +302,8 @@ file_sync_s_fun(SOCKET& accept_fd,
 {
     // 设置 data AES 加密解密密钥
     AES_KEY data_aes_encrypt_key, data_aes_decrypt_key;
-    set_aes_enc_dec_key(sync_data_key, data_key_bits_length, &data_aes_encrypt_key, &data_aes_decrypt_key);
+    set_aes_enc_dec_key(sync_data_key, data_key_bits_length, 
+        &data_aes_encrypt_key, &data_aes_decrypt_key);
 
     // 接收缓冲区
     unsigned char* recv_buf;
@@ -309,7 +312,8 @@ file_sync_s_fun(SOCKET& accept_fd,
 
     // 接收文件路径
     std::string directory_path;
-    recv_KDATA_DIR_PATH(accept_fd, directory_path, recv_buf,
+    recv_KDATA_DIR_PATH(accept_fd, directory_path, 
+        recv_buf,
         &data_aes_decrypt_key, sync_data_iv);
 
     // 根据路径更新文件路径的文件 hash 表

@@ -1,7 +1,8 @@
 
 #include "AES_need.h"
 
-size_t AES_block_alignment(size_t data_size)
+size_t 
+AES_block_alignment(size_t data_size)
 {
     return ((data_size + AES_BLOCK_SIZE) / AES_BLOCK_SIZE) * AES_BLOCK_SIZE;
 }
