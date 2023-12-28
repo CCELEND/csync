@@ -20,7 +20,8 @@ recv_KROOT_PUB_KEY(SOCKET& accept_fd,
         int pub_key_length, encrypted_pub_key_size;
         pub_key_length = key_agreement_c_head.raw_data_size;
         encrypted_pub_key_size = key_agreement_c_head.encrypted_data_size;
-        printf("[+] Encryption RSA negotiation public key length: %d\n", encrypted_pub_key_size);
+        printf("[+] Encryption RSA negotiation public key length: %d\n", 
+            encrypted_pub_key_size);
 
         // 分配 root AES 解密后公钥数据的缓冲区
         unsigned char* decrypted_pub_key;
@@ -91,9 +92,11 @@ recv_PRI_KET_verify_randoms(SOCKET& accept_fd,
         int verify_random_length, encrypted_verify_random_length;
         verify_random_length = key_agreement_c_head.raw_data_size;
         encrypted_verify_random_length = key_agreement_c_head.encrypted_data_size;
-        printf("[+] Encryption verify random sequence length: %d\n", encrypted_verify_random_length);
+        printf("[+] Encryption verify random sequence length: %d\n", 
+            encrypted_verify_random_length);
 
-        unsigned char* encrypted_verify_random = new unsigned char[encrypted_verify_random_length];
+        unsigned char* encrypted_verify_random;
+        encrypted_verify_random = new unsigned char[encrypted_verify_random_length];
         recv_all(accept_fd, (char*)recv_buf, encrypted_verify_random_length);
         memcpy(encrypted_verify_random, recv_buf, encrypted_verify_random_length);
         // 公钥解密客户端发送的验证随机序列
@@ -130,7 +133,8 @@ void send_PUB_KEY_KDATA_KIV(SOCKET& accept_fd,
     encrypted_data_key_iv = new unsigned char[encrypted_data_key_iv_length];
     memset(encrypted_data_key_iv, 0, encrypted_data_key_iv_length);
 
-    memcpy(encrypted_data_key_iv, encrypted_data_key, encrypted_data_key_length);
+    memcpy(encrypted_data_key_iv, 
+        encrypted_data_key, encrypted_data_key_length);
     memcpy(encrypted_data_key_iv + encrypted_data_key_length, 
         encrypted_data_iv, encrypted_data_iv_length);
 

@@ -17,11 +17,11 @@ send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
         directory_path_length, data_aes_encrypt_key, data_iv);
 
     // 生成 file_sync_packet
-    std::tuple<unsigned char*, int> generate_file_sync_packet_ret = generate_file_sync_packet(
+    std::tuple<unsigned char*, int> file_sync_packet_info = generate_file_sync_packet(
         4, directory_path_length, directory_path_encrypted_data_size,
         encrypted_directory_path);
-    unsigned char* file_sync_packet = std::get<0>(generate_file_sync_packet_ret);
-    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
+    unsigned char* file_sync_packet = std::get<0>(file_sync_packet_info);
+    int file_sync_packet_size = std::get<1>(file_sync_packet_info);
     
 
     // 发送 data AES 加密文件路径
@@ -89,11 +89,11 @@ send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::s
         file_name_hash_table_size, data_aes_encrypt_key, data_iv);
 
     // 生成 file_sync_packet
-    std::tuple<unsigned char*, int> generate_file_sync_packet_ret = generate_file_sync_packet(
+    std::tuple<unsigned char*, int> file_sync_packet_info = generate_file_sync_packet(
         7, file_name_hash_table_size, file_name_hash_table_size,
         encrypted_file_name_hash_table);
-    unsigned char* file_sync_packet = std::get<0>(generate_file_sync_packet_ret);
-    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
+    unsigned char* file_sync_packet = std::get<0>(file_sync_packet_info);
+    int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
     // 发送 data AES 加密缺少的文件哈希表
     printf("[*] Sending request file hash table...\n");
@@ -135,10 +135,8 @@ recv_KDATA_FILE_INFO(SOCKET& connect_fd, sync_file_info* file_info,
         memcpy(file_info, (struct sync_file_info*)decrypted_file_info, 
             file_info_size);
 
-        printf("[+] [ %s ] information: file size: %llu\n", file_info->file_name, file_info->file_total_size);
-        //printf("block: %d\n", file_info->block_total);
-        //printf("file name: %s\n", file_info->file_name);
-        //printf("file size: %llu\n", file_info->file_total_size);
+        printf("[+] [ %s ] information: file size: %llu\n", 
+            file_info->file_name, file_info->file_total_size);
 
         delete[] decrypted_file_info;
     }
@@ -181,20 +179,24 @@ send_sync_start(SOCKET& connect_fd)
 {
     struct file_sync file_sync_head { 0 };
     int file_sync_head_size = sizeof(struct file_sync);
+
     file_sync_head.type = 5;
     file_sync_head.raw_size = 0;
     file_sync_head.encrypted_size = 0;
 
-    send_all(connect_fd, (char*)&file_sync_head, file_sync_head_size);
+    send_all(connect_fd, 
+        (char*)&file_sync_head, file_sync_head_size);
 }
 void
 send_sync_quit(SOCKET& connect_fd)
 {
     struct file_sync file_sync_head { 0 };
     int file_sync_head_size = sizeof(struct file_sync);
+
     file_sync_head.type = 9;
     file_sync_head.raw_size = 0;
     file_sync_head.encrypted_size = 0;
 
-    send_all(connect_fd, (char*)&file_sync_head, file_sync_head_size);
+    send_all(connect_fd, 
+        (char*)&file_sync_head, file_sync_head_size);
 }

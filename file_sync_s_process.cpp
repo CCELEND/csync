@@ -47,9 +47,10 @@ void
 send_KDATA_HASH_TABLE(SOCKET& accept_fd, const std::map<std::string, std::string>& file_name_hash,
     const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv)
 {
-    std::tuple<struct file_name_hash_table*, int> para = file_name_hash_map_to_struct(file_name_hash);
-    struct file_name_hash_table* file_name_hash_table = std::get<0>(para);
-    int file_name_hash_table_size = std::get<1>(para);
+    std::tuple<struct file_name_hash_table*, int> file_name_hash_table_info;
+    file_name_hash_table_info = file_name_hash_map_to_struct(file_name_hash);
+    struct file_name_hash_table* file_name_hash_table = std::get<0>(file_name_hash_table_info);
+    int file_name_hash_table_size = std::get<1>(file_name_hash_table_info);
 
     // 分配 data AES 加密后文件哈希表的缓冲区
     unsigned char* encrypted_file_name_hash_table;
@@ -60,11 +61,11 @@ send_KDATA_HASH_TABLE(SOCKET& accept_fd, const std::map<std::string, std::string
         file_name_hash_table_size, data_aes_encrypt_key, data_iv);
 
     // 生成 file_sync_packet
-    std::tuple<unsigned char*, int> generate_file_sync_packet_ret = generate_file_sync_packet(
+    std::tuple<unsigned char*, int> file_sync_packet_info = generate_file_sync_packet(
         6, file_name_hash_table_size, file_name_hash_table_size,
         encrypted_file_name_hash_table);
-    unsigned char* file_sync_packet = std::get<0>(generate_file_sync_packet_ret);
-    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
+    unsigned char* file_sync_packet = std::get<0>(file_sync_packet_info);
+    int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
     // 发送 data AES 加密文件哈希表
     printf("[*] Sending file hash table...\n\n");
@@ -115,7 +116,6 @@ recv_KDATA_REQ_HASH_TABLE(SOCKET& accept_fd, std::map<std::string, std::string>&
     }
 }
 
-
 void
 send_KDATA_FILE_INFO(SOCKET& accept_fd, const sync_file_info* file_info,
     const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv)
@@ -132,11 +132,11 @@ send_KDATA_FILE_INFO(SOCKET& accept_fd, const sync_file_info* file_info,
         file_info_size, data_aes_encrypt_key, data_iv);
 
     // 生成 file_sync_packet
-    std::tuple<unsigned char*, int> generate_file_sync_packet_ret = generate_file_sync_packet(
+    std::tuple<unsigned char*, int> file_sync_packet_info = generate_file_sync_packet(
         8, file_info_size, encrypted_file_info_size,
         encrypted_file_info);
-    unsigned char* file_sync_packet = std::get<0>(generate_file_sync_packet_ret);
-    int file_sync_packet_size = std::get<1>(generate_file_sync_packet_ret);
+    unsigned char* file_sync_packet = std::get<0>(file_sync_packet_info);
+    int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
     // 发送 data AES 加密文件信息
     printf("[*] Sending [ %s ] information...\n", file_info->file_name);
@@ -152,7 +152,7 @@ void send_KDATA_FILE_BLOCK(SOCKET& accept_fd, const unsigned char* file_block,
 {
     int encrypted_file_block_size = AES_block_alignment(file_block_size);
 
-    // 分配 data AES 加密后文件块
+    // 分配 data AES 加密后文件块缓冲区
     unsigned char* encrypted_file_block;
     encrypted_file_block = new unsigned char[encrypted_file_block_size];
     memset(encrypted_file_block, 0, encrypted_file_block_size);
@@ -162,11 +162,11 @@ void send_KDATA_FILE_BLOCK(SOCKET& accept_fd, const unsigned char* file_block,
         file_block_size, data_aes_encrypt_key, data_iv);
 
     // 生成 file_block_packet
-    std::tuple<unsigned char*, int> generate_file_block_packet_ret = generate_file_block_packet(
+    std::tuple<unsigned char*, int> file_block_packet_info = generate_file_block_packet(
         file_block_index, file_block_size, encrypted_file_block_size,
         encrypted_file_block);
-    unsigned char* file_block_packet = std::get<0>(generate_file_block_packet_ret);
-    int file_block_packet_size = std::get<1>(generate_file_block_packet_ret);
+    unsigned char* file_block_packet = std::get<0>(file_block_packet_info);
+    int file_block_packet_size = std::get<1>(file_block_packet_info);
    
     send_all(accept_fd, (char*)file_block_packet, file_block_packet_size);
 

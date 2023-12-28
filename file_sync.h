@@ -14,6 +14,7 @@ struct file_sync
 	int raw_size;
 	int encrypted_size;
 };
+
 // 文件基本信息
 struct sync_file_info
 {
@@ -22,7 +23,6 @@ struct sync_file_info
 	unsigned char file_name[64];
 	unsigned char file_hash[64];
 };
-
 // 文件数据
 struct sync_file_data
 {

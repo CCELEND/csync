@@ -56,7 +56,9 @@ recv_PUB_KET_randoms(SOCKET& connect_fd,
     {
         int encrypted_randoms_size;
         encrypted_randoms_size = key_agreement_s_head.size;
-        unsigned char* encrypted_randoms = new unsigned char[encrypted_randoms_size];
+
+        unsigned char* encrypted_randoms;
+        encrypted_randoms = new unsigned char[encrypted_randoms_size];
         recv_all(connect_fd, (char*)recv_buf, encrypted_randoms_size);
         memcpy(encrypted_randoms, recv_buf, encrypted_randoms_size);
 

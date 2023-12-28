@@ -12,9 +12,9 @@ generate_file_sync_packet(
     file_sync_head.encrypted_size = encrypted_size;
 
     int file_sync_data_size = encrypted_size;
+    int file_sync_packet_size = file_sync_head_size + file_sync_data_size;
 
     unsigned char* file_sync_packet;
-    int file_sync_packet_size = file_sync_head_size + file_sync_data_size;
     file_sync_packet = new unsigned char[file_sync_packet_size];
     memset(file_sync_packet, 0, file_sync_packet_size);
 
@@ -40,9 +40,9 @@ generate_file_block_packet(
     file_block_head.encrypted_block_size = encrypted_block_size;
 
     int file_block_data_size = encrypted_block_size;
+    int file_block_packet_size = file_block_head_size + file_block_data_size;
 
     unsigned char* file_block_packet;
-    int file_block_packet_size = file_block_head_size + file_block_data_size;
     file_block_packet = new unsigned char[file_block_packet_size];
     memset(file_block_packet, 0, file_block_packet_size);
 
@@ -289,11 +289,132 @@ file_sync_c_fun(SOCKET& connect_fd,
         }
         else
         {
-            printf("Reenter!\n");
+            printf("[-] Reenter!\n");
         }
     }
 
     delete[] recv_buf;
+}
+
+static void
+send_file_info_and_block_data(SOCKET& accept_fd, 
+    const std::string& directory_path, struct sync_file_info* file_info_list, int num,
+    const AES_KEY* data_aes_encrypt_key, const unsigned char* sync_data_iv)
+{
+    size_t file_size;
+    unsigned char* file_data_buf, * file_block;
+    std::string file_path;
+    int file_block_size;
+
+    // 发送文件基本信息和文件块
+    for (int i = 0; i < num; i++)
+    {
+        // 发送文件基本信息
+        send_KDATA_FILE_INFO(accept_fd, &file_info_list[i],
+            data_aes_encrypt_key, sync_data_iv);
+
+        // 读取文件数据到缓冲区
+        std::tuple<unsigned char*, size_t> file_info;
+        file_path = directory_path + "\\" + std::string((char*)file_info_list[i].file_name);
+        file_info = load_data_from_file(file_path.c_str());
+        file_data_buf = std::get<0>(file_info);
+        file_size = std::get<1>(file_info);
+
+        printf("[*] Sending [ %s ] file block...\n", file_info_list[i].file_name);
+        for (int file_block_index = 0; file_block_index < file_info_list[i].block_total; file_block_index++)
+        {
+            if (file_block_index == file_info_list[i].block_total - 1)
+                file_block_size = int(file_size - file_block_index * 8000);
+            else
+                file_block_size = 8000;
+            file_block = file_data_buf + file_block_index * 8000;
+
+            // 开始发送文件块
+            send_KDATA_FILE_BLOCK(accept_fd, file_block, 
+                file_block_size, file_block_index,
+                data_aes_encrypt_key, sync_data_iv);
+        }
+
+        delete[] file_data_buf;
+    }
+    delete[] file_info_list;
+    printf("[+] Sync successful!\n");
+}
+
+static void
+SYNC_S(SOCKET& accept_fd,
+    const std::string& directory_path, std::map<std::string, std::string> file_name_hash_s,
+    unsigned char* recv_buf,
+    const AES_KEY* data_aes_encrypt_key, const AES_KEY* data_aes_decrypt_key, const unsigned char* sync_data_iv)
+{
+    struct file_sync file_sync_head { 0 };
+    int file_sync_head_size = sizeof(struct file_sync);
+
+    while (true)
+    {
+        // 接收客户端的同步请求或者同步结束包
+        printf("[*] Waiting for client operation...\n\n");
+        recv_all(accept_fd, (char*)recv_buf, file_sync_head_size);
+        memcpy(&file_sync_head, (struct file_sync*)recv_buf,
+            file_sync_head_size);
+
+        if (file_sync_head.type == 5)
+        {
+            // 更新哈希表
+            update_file_hash_table(directory_path, file_name_hash_s);
+
+            // 发送加密的文件 hash 表
+            send_KDATA_HASH_TABLE(accept_fd, file_name_hash_s,
+                data_aes_encrypt_key, sync_data_iv);
+
+            // 接收请求文件哈希表
+            std::map<std::string, std::string> req_file_name_hash;
+            recv_KDATA_REQ_HASH_TABLE(accept_fd, req_file_name_hash, recv_buf,
+                data_aes_decrypt_key, sync_data_iv);
+
+            if (req_file_name_hash.size() == 0)
+            {
+                printf("[+] Client synchronized.\n");
+            }
+            else
+            {
+                printf("[+] Request file hash table:\n");
+                show_file_hash_table(req_file_name_hash);
+                printf("\n");
+
+                // 获取对应文件信息，建立文件信息表
+                std::tuple<struct sync_file_info*, int> file_info_list_info;
+                file_info_list_info = get_file_info_to_struct(directory_path, req_file_name_hash);
+                struct sync_file_info* file_info_list = std::get<0>(file_info_list_info);
+                int num, file_info_list_size = std::get<1>(file_info_list_info);
+
+                num = file_info_list_size / sizeof(struct sync_file_info);
+                //printf("[+] File info:\n");
+                //for (int i = 0; i < num; i++)
+                //{
+                //    printf("block: %d\n", file_info_list[i].block_total);
+                //    printf("file name: %s\n", file_info_list[i].file_name);
+                //    printf("file size: %llu\n", file_info_list[i].file_total_size);
+                //}
+
+                send_file_info_and_block_data(accept_fd,
+                    directory_path, file_info_list, num,
+                    data_aes_encrypt_key, sync_data_iv);
+            }
+
+            printf("\n");
+        }
+        else if (file_sync_head.type == 9)
+        {
+            printf("[+] Sync ended.\n\n");
+            return;
+        }
+        else
+        {
+            printf("[-] Wrong header!\n\n");
+        }
+    }
+
 }
 
 void
@@ -323,102 +444,9 @@ file_sync_s_fun(SOCKET& accept_fd,
     show_file_hash_table(file_name_hash_s);
     printf("\n");
 
-    struct file_sync file_sync_head { 0 };
-    int file_sync_head_size = sizeof(struct file_sync);
-    while (true)
-    {
-        // 接收客户端的同步请求或者同步结束包
-        printf("[*] Waiting for client operation...\n\n");
-        recv_all(accept_fd, (char*)recv_buf, file_sync_head_size);
-        memcpy(&file_sync_head, (struct file_sync*)recv_buf,
-            file_sync_head_size);
-
-        if (file_sync_head.type == 5)
-        {
-            update_file_hash_table(directory_path, file_name_hash_s);
-            // 发送加密的文件 hash 表 
-            send_KDATA_HASH_TABLE(accept_fd, file_name_hash_s,
-                &data_aes_encrypt_key, sync_data_iv);
-
-            // 接收请求文件哈希表
-            std::map<std::string, std::string> req_file_name_hash;
-            recv_KDATA_REQ_HASH_TABLE(accept_fd, req_file_name_hash, recv_buf,
-                &data_aes_decrypt_key, sync_data_iv);
-
-            if (req_file_name_hash.size() == 0)
-            {
-                printf("[+] Client synchronized.\n");
-            }
-            else
-            {
-                printf("[+] Request file hash table:\n");
-                show_file_hash_table(req_file_name_hash);
-                printf("\n");
-
-                // 获取对应文件信息，建立文件信息表
-                std::tuple<struct sync_file_info*, int> file_info_list_info;
-                file_info_list_info = get_file_info_to_struct(directory_path, req_file_name_hash);
-                struct sync_file_info* file_info_list = std::get<0>(file_info_list_info);
-                int num, file_info_list_size = std::get<1>(file_info_list_info);
-
-                num = file_info_list_size / sizeof(struct sync_file_info);
-                //printf("[+] File info:\n");
-                //for (int i = 0; i < num; i++)
-                //{
-                //    printf("block: %d\n", file_info_list[i].block_total);
-                //    printf("file name: %s\n", file_info_list[i].file_name);
-                //    printf("file size: %llu\n", file_info_list[i].file_total_size);
-                //}
-
-                size_t file_size;
-                unsigned char* file_data_buf, * file_block;
-                std::string file_path;
-                int file_block_size;
-
-                // 发送文件基本信息头和文件块
-                for (int i = 0; i < num; i++)
-                {
-                    // 发送文件信息
-                    send_KDATA_FILE_INFO(accept_fd, &file_info_list[i],
-                        &data_aes_encrypt_key, sync_data_iv);
-                    // 读取文件数据到缓冲区
-                    file_path = directory_path + "\\" + std::string((char*)file_info_list[i].file_name);
-
-                    std::tuple<unsigned char*, size_t> file_info;
-                    file_info = load_data_from_file(file_path.c_str());
-                    file_data_buf = std::get<0>(file_info);
-                    file_size = std::get<1>(file_info);
-
-                    printf("[*] Sending [ %s ] file block...\n", file_info_list[i].file_name);
-                    for (int file_block_index = 0; file_block_index < file_info_list[i].block_total; file_block_index++)
-                    {
-                        if (file_block_index == file_info_list[i].block_total - 1)
-                            file_block_size = int(file_size - file_block_index * 8000);
-                        else
-                            file_block_size = 8000;
-                        file_block = file_data_buf + file_block_index * 8000;
-
-                        // 开始发送文件块
-                        send_KDATA_FILE_BLOCK(accept_fd, 
-                            file_block, file_block_size, file_block_index,
-                            &data_aes_encrypt_key, sync_data_iv);
-                    }
-
-                    delete[] file_data_buf;
-                }
-                delete[] file_info_list;
-                printf("[+] Sync successful!\n");
-            }
-
-            printf("\n");
-        }
-        else
-        {
-            printf("[+] Sync ended.\n\n");
-            break;
-        }
-
-    }
+    SYNC_S(accept_fd, directory_path, file_name_hash_s,
+        recv_buf,
+        &data_aes_encrypt_key, &data_aes_decrypt_key, sync_data_iv);
 
     delete[] recv_buf;
 }

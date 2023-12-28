@@ -147,7 +147,8 @@ key_agreement_s_fun(SOCKET& accept_fd,
     load_aes_iv_from_file("root_iv.bin", root_iv);
     // …Ë÷√ root AES º”√‹Ω‚√‹√‹‘ø
     AES_KEY root_aes_encrypt_key, root_aes_decrypt_key;
-    set_aes_enc_dec_key(root_key, root_key_bits_length, &root_aes_encrypt_key, &root_aes_decrypt_key);
+    set_aes_enc_dec_key(root_key, root_key_bits_length, 
+        &root_aes_encrypt_key, &root_aes_decrypt_key);
 
     unsigned char* recv_buf;
     recv_buf = new unsigned char[0x2000];
