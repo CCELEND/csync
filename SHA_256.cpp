@@ -21,14 +21,3 @@ sha_256(const unsigned char* data, size_t data_size, unsigned char* hash_val)
 
     return ss.str();
 }
-
-//int main() {
-//    std::string input = "Hello, SHA-256!";
-//    unsigned char hash_val[SHA256_DIGEST_LENGTH];
-//    std::string hashed = sha_256(input.c_str(), input.length(), hash_val);
-//
-//    std::cout << "Input: " << input << std::endl;
-//    std::cout << "SHA-256 Hash: " << hashed << std::endl;
-//
-//    return 0;
-//}

@@ -32,6 +32,7 @@ bool close_socket_lib()
 	{
 		err("WSACleanup");
 	}
+
 	return true;
 }
 
@@ -43,9 +44,11 @@ bool send_all(SOCKET& sock, char* buffer, int size)
 		int SendSize = send(sock, buffer, size, 0);
 		if (SOCKET_ERROR == SendSize)
 			return false;
+
 		size = size - SendSize; //用于循环发送且退出功能
 		buffer += SendSize;    //用于计算已发buffer的偏移量
 	}
+
 	return true;
 }
 
@@ -56,9 +59,11 @@ bool recv_all(SOCKET& sock, char* buffer, int size)
 		int RecvSize = recv(sock, buffer, size, 0);
 		if (SOCKET_ERROR == RecvSize)
 			return false;
+
 		size = size - RecvSize;
 		buffer += RecvSize;
 	}
+
 	return true;
 }
 

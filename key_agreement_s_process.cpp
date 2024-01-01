@@ -39,7 +39,6 @@ recv_KROOT_PUB_KEY(SOCKET& accept_fd,
 
         delete[] decrypted_pub_key;
     }
-
 }
 
 void 
@@ -58,12 +57,12 @@ send_PUB_KET_randoms(SOCKET& accept_fd,
     RSA_pub_encrypt(randoms, encrypted_randoms, pub_key, 0x10);
 
     // 生成 key_agreement_s_packet
-    std::tuple<unsigned char*, int> result;
-    result = generate_key_agreement_s_packet(
+    std::tuple<unsigned char*, int> key_agreement_s_packet_info;
+    key_agreement_s_packet_info = generate_key_agreement_s_packet(
         2, encrypted_randoms_length,
         encrypted_randoms);
-    unsigned char* key_agreement_s_packet = std::get<0>(result);
-    int key_agreement_s_packet_size = std::get<1>(result);
+    unsigned char* key_agreement_s_packet = std::get<0>(key_agreement_s_packet_info);
+    int key_agreement_s_packet_size = std::get<1>(key_agreement_s_packet_info);
 
     printf("[*] Sending public key encrypted random sequence...\n");
     // 发送公钥加密随机序列
@@ -100,7 +99,8 @@ recv_PRI_KET_verify_randoms(SOCKET& accept_fd,
         recv_all(accept_fd, (char*)recv_buf, encrypted_verify_random_length);
         memcpy(encrypted_verify_random, recv_buf, encrypted_verify_random_length);
         // 公钥解密客户端发送的验证随机序列
-        RSA_pub_decrypt(encrypted_verify_random, verify_randoms, pub_key, encrypted_verify_random_length);
+        RSA_pub_decrypt(encrypted_verify_random, verify_randoms, pub_key, 
+            encrypted_verify_random_length);
 
         delete[] encrypted_verify_random;
     }
@@ -139,12 +139,12 @@ void send_PUB_KEY_KDATA_KIV(SOCKET& accept_fd,
         encrypted_data_iv, encrypted_data_iv_length);
 
     // 生成 key_agreement_s_packet
-    std::tuple<unsigned char*, int> result;
-    result = generate_key_agreement_s_packet(
+    std::tuple<unsigned char*, int> key_agreement_s_packet_info;
+    key_agreement_s_packet_info = generate_key_agreement_s_packet(
         3, encrypted_data_key_iv_length,
         encrypted_data_key_iv);
-    unsigned char* key_agreement_s_packet = std::get<0>(result);
-    int key_agreement_s_packet_size = std::get<1>(result);
+    unsigned char* key_agreement_s_packet = std::get<0>(key_agreement_s_packet_info);
+    int key_agreement_s_packet_size = std::get<1>(key_agreement_s_packet_info);
 
     printf("[*] Sending public key encrypted AES data key and IV...\n");
     // 发送公钥加密的 data key 和 data iv

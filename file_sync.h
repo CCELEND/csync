@@ -6,8 +6,10 @@
 #include "file_hash.h"
 #include "tcp_socket.h"
 
-// 客户端 4: 文件路径，5: 同步开始，7: 缺少文件的 hash，9: 同步结束
-// 服务器 6: 文件 hash 表，8: 文件基本信息
+#define FILE_BLOCK_MAX_LENGTH 8000
+
+// 客户端 4: 文件路径，5: 同步开始，7: 缺少文件的哈希表，9: 同步结束
+// 服务器 6: 文件哈希表，8: 文件信息
 struct file_sync
 {
 	int type;
@@ -15,7 +17,8 @@ struct file_sync
 	int encrypted_size;
 };
 
-// 文件基本信息
+// 文件信息
+// 包括文件总块数，文件总大小，文件名，文件哈希
 struct sync_file_info
 {
 	int block_total;
@@ -24,6 +27,7 @@ struct sync_file_info
 	unsigned char file_hash[64];
 };
 // 文件数据
+// 包括文件块序号，原始文件块大小，加密文件块大小
 struct sync_file_data
 {
 	int block_index;
@@ -31,7 +35,8 @@ struct sync_file_data
 	int encrypted_block_size;
 };
 
-struct file_name_hash_table
+// 文件名，文件哈希
+struct file_name_hash
 {
 	unsigned char name[64];
 	unsigned char hash[64];
@@ -54,59 +59,69 @@ generate_file_block_packet(
 	int block_index, int raw_block_size, int encrypted_block_size,
 	unsigned char* encrypted_data);
 
-// map 转换结构体
-std::tuple<struct file_name_hash_table*, int>
-file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash);
+// map 转换结构体列表
+std::tuple<struct file_name_hash*, int>
+file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash_map);
 
 // 结构体转换 map
 void 
-struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_hash_table,
-	std::map<std::string, std::string>& file_name_hash,
+struct_to_file_name_hash_map(const struct file_name_hash* file_name_hash_list,
+	std::map<std::string, std::string>& file_name_hash_map,
 	int num);
 
 // 通过文件目录得到同步文件结构体
 std::tuple<struct sync_file_info*, int>
 get_file_info_to_struct(const std::string& directory_path,
-	const std::map<std::string, std::string>& req_file_name_hash);
+	const std::map<std::string, std::string>& req_file_name_hash_map);
 
 // 客户端过程
 void send_sync_start(SOCKET& connect_fd);
 void send_sync_quit(SOCKET& connect_fd);
 
-void send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
+void send_KDATA_DIR_PATH(SOCKET& connect_fd, 
+	const std::string& directory_path,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
 
-void recv_KDATA_HASH_TABLE(SOCKET& connect_fd, std::map<std::string, std::string>& file_name_hash,
+void recv_KDATA_NAME_HASH_LIST(SOCKET& connect_fd, 
+	std::map<std::string, std::string>& file_name_hash_map,
 	unsigned char* recv_buf,
 	const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv);
 
-void send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::string>& req_file_name_hash,
+void send_KDATA_REQ_NAME_HASH_LIST(SOCKET& connect_fd, 
+	const std::map<std::string, std::string>& req_file_name_hash_map,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
 
-void recv_KDATA_FILE_INFO(SOCKET& connect_fd, sync_file_info* file_info,
+void recv_KDATA_FILE_INFO(SOCKET& connect_fd, 
+	sync_file_info* file_info,
 	unsigned char* recv_buf,
 	const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv);
 
-void recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, unsigned char* file_data_buf,
+void recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, 
+	unsigned char* file_data_buf,
 	unsigned char* recv_buf,
 	const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv);
 
 // 服务器过程
-void recv_KDATA_DIR_PATH(SOCKET& accept_fd, std::string& directory_path,
+void recv_KDATA_DIR_PATH(SOCKET& accept_fd, 
+	std::string& directory_path,
 	unsigned char* recv_buf,
 	const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv);
 
-void send_KDATA_HASH_TABLE(SOCKET& accept_fd, const std::map<std::string, std::string>& file_name_hash,
+void send_KDATA_NAME_HASH_LIST(SOCKET& accept_fd, 
+	const std::map<std::string, std::string>& file_name_hash_map,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
 
-void recv_KDATA_REQ_HASH_TABLE(SOCKET& accept_fd, std::map<std::string, std::string>& req_file_name_hash,
+void recv_KDATA_REQ_NAME_HASH_LIST(SOCKET& accept_fd, 
+	std::map<std::string, std::string>& req_file_name_hash_map,
 	unsigned char* recv_buf,
 	const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv);
 
-void send_KDATA_FILE_INFO(SOCKET& accept_fd, const sync_file_info* file_info,
+void send_KDATA_FILE_INFO(SOCKET& accept_fd, 
+	const sync_file_info* file_info,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
 
-void send_KDATA_FILE_BLOCK(SOCKET& accept_fd, const unsigned char* file_block,
+void send_KDATA_FILE_BLOCK(SOCKET& accept_fd, 
+	const unsigned char* file_block,
 	const int file_block_size, const int file_block_index,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
 

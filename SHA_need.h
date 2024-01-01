@@ -7,4 +7,5 @@
 #include <fstream>
 #include <iomanip>
 
-std::string sha_256(const unsigned char* data, size_t data_size, unsigned char* hash_val);
+std::string 
+sha_256(const unsigned char* data, size_t data_size, unsigned char* hash_val);

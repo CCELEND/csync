@@ -3,8 +3,8 @@ namespace fs = std::filesystem;
 
 // 指定目录路径建立哈希表
 void 
-update_file_hash_table(const std::string directory_path, 
-    std::map<std::string, std::string>& file_name_hash)
+update_file_name_hash_map(const std::string directory_path, 
+    std::map<std::string, std::string>& file_name_hash_map)
 {
     unsigned char* file_data_buf = nullptr;
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -22,18 +22,17 @@ update_file_hash_table(const std::string directory_path,
         file_size = std::get<1>(file_info);
 
         file_hash = sha_256(file_data_buf, file_size, hash);
-        //printf("[+] File hash: %s\n", file_hash.c_str());
 
-        file_name_hash[file_name] = file_hash;
+        file_name_hash_map[file_name] = file_hash;
 
         delete[] file_data_buf;
     }
 }
 
 void
-show_file_hash_table(const std::map<std::string, std::string>& file_name_hash)
+show_file_name_hash_map(const std::map<std::string, std::string>& file_name_hash_map)
 {
-    for (auto it : file_name_hash)
+    for (auto it : file_name_hash_map)
     {
         printf("{ %-16s : %s }\n", it.first.c_str(), it.second.c_str());
     }
@@ -42,22 +41,22 @@ show_file_hash_table(const std::map<std::string, std::string>& file_name_hash)
 
 
 void
-create_req_file_hash_table(const std::map<std::string, std::string>& file_name_hash_c,
-    const std::map<std::string, std::string>& file_name_hash_s,
-    std::map<std::string, std::string>& req_file_name_hash)
+create_req_file_name_hash_map(const std::map<std::string, std::string>& file_name_hash_c_map,
+    const std::map<std::string, std::string>& file_name_hash_s_map,
+    std::map<std::string, std::string>& req_file_name_hash_map)
 {
     std::map<std::string, std::string> temp;
-    temp = file_name_hash_s;
-    req_file_name_hash = temp;
+    temp = file_name_hash_s_map;
+    req_file_name_hash_map = temp;
 
     for (auto it_temp : temp)
     {
-        for (auto it_c: file_name_hash_c)
+        for (auto it_c: file_name_hash_c_map)
         {
             if (it_temp.second == it_c.second) 
             {
                 //  删除key==it_temp.first的元素
-                req_file_name_hash.erase(it_temp.first);
+                req_file_name_hash_map.erase(it_temp.first);
             }
         }
     }

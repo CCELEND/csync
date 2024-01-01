@@ -2,7 +2,8 @@
 #include "file_sync.h"
 
 void
-send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
+send_KDATA_DIR_PATH(SOCKET& connect_fd, 
+    const std::string& directory_path,
     const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv)
 {
     int directory_path_length = directory_path.length();
@@ -17,7 +18,8 @@ send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
         directory_path_length, data_aes_encrypt_key, data_iv);
 
     // 生成 file_sync_packet
-    std::tuple<unsigned char*, int> file_sync_packet_info = generate_file_sync_packet(
+    std::tuple<unsigned char*, int> file_sync_packet_info;
+    file_sync_packet_info = generate_file_sync_packet(
         4, directory_path_length, directory_path_encrypted_data_size,
         encrypted_directory_path);
     unsigned char* file_sync_packet = std::get<0>(file_sync_packet_info);
@@ -33,7 +35,8 @@ send_KDATA_DIR_PATH(SOCKET& connect_fd, const std::string& directory_path,
 }
 
 void
-recv_KDATA_HASH_TABLE(SOCKET& connect_fd, std::map<std::string, std::string>& file_name_hash,
+recv_KDATA_NAME_HASH_LIST(SOCKET& connect_fd, 
+    std::map<std::string, std::string>& file_name_hash_map,
     unsigned char* recv_buf,
     const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv)
 {
@@ -47,51 +50,54 @@ recv_KDATA_HASH_TABLE(SOCKET& connect_fd, std::map<std::string, std::string>& fi
 
     if (file_sync_head.type == 6)
     {
-        int file_name_hash_table_size, encrypted_file_name_hash_table_size;
-        file_name_hash_table_size = file_sync_head.raw_size;
-        encrypted_file_name_hash_table_size = file_sync_head.encrypted_size;
+        int file_name_hash_list_size, encrypted_file_name_hash_list_size;
+        file_name_hash_list_size = file_sync_head.raw_size;
+        encrypted_file_name_hash_list_size = file_sync_head.encrypted_size;
 
-        unsigned char* decrypted_file_name_hash_table;
-        decrypted_file_name_hash_table = new unsigned char[encrypted_file_name_hash_table_size];
-        memset(decrypted_file_name_hash_table, 0, encrypted_file_name_hash_table_size);
+        unsigned char* decrypted_file_name_hash_list;
+        decrypted_file_name_hash_list = new unsigned char[encrypted_file_name_hash_list_size];
+        memset(decrypted_file_name_hash_list, 0, encrypted_file_name_hash_list_size);
 
-        recv_all(connect_fd, (char*)recv_buf, encrypted_file_name_hash_table_size);
+        recv_all(connect_fd, (char*)recv_buf, encrypted_file_name_hash_list_size);
 
         // data AES 解密获得文件哈希表
-        aes_cbc_decrypt(recv_buf, decrypted_file_name_hash_table,
-            encrypted_file_name_hash_table_size, data_aes_decrypt_key, data_iv);
+        aes_cbc_decrypt(recv_buf, decrypted_file_name_hash_list,
+            encrypted_file_name_hash_list_size, data_aes_decrypt_key, data_iv);
 
-        int num = encrypted_file_name_hash_table_size / 128;
-        struct file_name_hash_table* file_name_hash_table;
-        file_name_hash_table = (struct file_name_hash_table*)decrypted_file_name_hash_table;
+        int num = encrypted_file_name_hash_list_size / 128;
+        struct file_name_hash* file_name_hash_list;
+        file_name_hash_list = (struct file_name_hash*)decrypted_file_name_hash_list;
 
-        struct_to_file_name_hash_map(file_name_hash_table, file_name_hash, num);
+        struct_to_file_name_hash_map(file_name_hash_list, file_name_hash_map, num);
 
-        delete[] decrypted_file_name_hash_table;
+        delete[] decrypted_file_name_hash_list;
     }
 
 }
 
 void
-send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::string>& req_file_name_hash,
+send_KDATA_REQ_NAME_HASH_LIST(SOCKET& connect_fd, 
+    const std::map<std::string, std::string>& req_file_name_hash_map,
     const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv)
 {
-    std::tuple<struct file_name_hash_table*, int> para = file_name_hash_map_to_struct(req_file_name_hash);
-    struct file_name_hash_table* file_name_hash_table = std::get<0>(para);
-    int file_name_hash_table_size = std::get<1>(para);
+    std::tuple<struct file_name_hash*, int> file_name_hash_list_info;
+    file_name_hash_list_info = file_name_hash_map_to_struct(req_file_name_hash_map);
+    struct file_name_hash* file_name_hash_list = std::get<0>(file_name_hash_list_info);
+    int file_name_hash_list_size = std::get<1>(file_name_hash_list_info);
     
     // 分配 data AES 加密后缺少的文件哈希表的缓冲区
-    unsigned char* encrypted_file_name_hash_table;
-    encrypted_file_name_hash_table = new unsigned char[file_name_hash_table_size];
-    memset(encrypted_file_name_hash_table, 0, file_name_hash_table_size);
+    unsigned char* encrypted_file_name_hash_list;
+    encrypted_file_name_hash_list = new unsigned char[file_name_hash_list_size];
+    memset(encrypted_file_name_hash_list, 0, file_name_hash_list_size);
     // data AES 加密缺少的文件哈希表
-    aes_cbc_encrypt((const unsigned char*)(file_name_hash_table), encrypted_file_name_hash_table,
-        file_name_hash_table_size, data_aes_encrypt_key, data_iv);
+    aes_cbc_encrypt((const unsigned char*)(file_name_hash_list), encrypted_file_name_hash_list,
+        file_name_hash_list_size, data_aes_encrypt_key, data_iv);
 
     // 生成 file_sync_packet
-    std::tuple<unsigned char*, int> file_sync_packet_info = generate_file_sync_packet(
-        7, file_name_hash_table_size, file_name_hash_table_size,
-        encrypted_file_name_hash_table);
+    std::tuple<unsigned char*, int> file_sync_packet_info;
+    file_sync_packet_info = generate_file_sync_packet(
+        7, file_name_hash_list_size, file_name_hash_list_size,
+        encrypted_file_name_hash_list);
     unsigned char* file_sync_packet = std::get<0>(file_sync_packet_info);
     int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
@@ -99,13 +105,14 @@ send_KDATA_REQ_HASH_TABLE(SOCKET& connect_fd, const std::map<std::string, std::s
     printf("[*] Sending request file hash table...\n");
     send_all(connect_fd, (char*)file_sync_packet, file_sync_packet_size);
 
-    delete[] file_name_hash_table;
-    delete[] encrypted_file_name_hash_table;
+    delete[] file_name_hash_list;
+    delete[] encrypted_file_name_hash_list;
     delete[] file_sync_packet;
 }
 
 void
-recv_KDATA_FILE_INFO(SOCKET& connect_fd, sync_file_info* file_info,
+recv_KDATA_FILE_INFO(SOCKET& connect_fd, 
+    sync_file_info* file_info,
     unsigned char* recv_buf,
     const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv)
 {
@@ -143,7 +150,8 @@ recv_KDATA_FILE_INFO(SOCKET& connect_fd, sync_file_info* file_info,
 }
 
 void 
-recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, unsigned char* file_data_buf,
+recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, 
+    unsigned char* file_data_buf,
     unsigned char* recv_buf,
     const AES_KEY* data_aes_decrypt_key, const unsigned char* data_iv)
 {
@@ -165,10 +173,10 @@ recv_KDATA_FILE_BLOCK(SOCKET& connect_fd, unsigned char* file_data_buf,
     recv_all(connect_fd, (char*)recv_buf, encrypted_file_block_size);
 
     // data AES 解密获得文件块数据
-    aes_cbc_decrypt(recv_buf, decrypted_file_block,
-        encrypted_file_block_size, data_aes_decrypt_key, data_iv);
+    aes_cbc_decrypt(recv_buf, decrypted_file_block, encrypted_file_block_size, 
+        data_aes_decrypt_key, data_iv);
 
-    memcpy(file_data_buf + file_block_index * 8000, decrypted_file_block,
+    memcpy(file_data_buf + file_block_index * FILE_BLOCK_MAX_LENGTH, decrypted_file_block,
         raw_file_block_size);
 
     delete[] decrypted_file_block;

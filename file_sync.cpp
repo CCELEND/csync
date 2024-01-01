@@ -58,36 +58,36 @@ generate_file_block_packet(
 
 
 // map 值提取到结构体
-std::tuple<struct file_name_hash_table*, int> 
-file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash)
+std::tuple<struct file_name_hash*, int> 
+file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name_hash_map)
 {
-    size_t num = file_name_hash.size();
-    int file_name_hash_table_size = num * sizeof(struct file_name_hash_table);
-    struct file_name_hash_table* file_name_hash_table;
-    file_name_hash_table = new struct file_name_hash_table[num];
-    memset(file_name_hash_table, 0, file_name_hash_table_size);
+    size_t num = file_name_hash_map.size();
+    int file_name_hash_list_size = num * sizeof(struct file_name_hash);
+    struct file_name_hash* file_name_hash_list;
+    file_name_hash_list = new struct file_name_hash[num];
+    memset(file_name_hash_list, 0, file_name_hash_list_size);
 
     int i = 0;
     size_t len = 0;
-    for (auto it : file_name_hash)
+    for (auto it : file_name_hash_map)
     {
         len = it.first.length();
         if (len > 63) return std::make_tuple(nullptr, 0);
 
-        memcpy(file_name_hash_table[i].name, it.first.c_str(), len);
-        memcpy(file_name_hash_table[i].hash, it.second.c_str(), 64);
+        memcpy(file_name_hash_list[i].name, it.first.c_str(), len);
+        memcpy(file_name_hash_list[i].hash, it.second.c_str(), 64);
         i++;
     }
 
-    std::tuple<struct file_name_hash_table*, int> result;
-    result = std::make_tuple(file_name_hash_table, file_name_hash_table_size);
+    std::tuple<struct file_name_hash*, int> result;
+    result = std::make_tuple(file_name_hash_list, file_name_hash_list_size);
     return result;
 }
 
 // 结构体值提取到 map
 void 
-struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_hash_table,
-    std::map<std::string, std::string>& file_name_hash,
+struct_to_file_name_hash_map(const struct file_name_hash* file_name_hash_list,
+    std::map<std::string, std::string>& file_name_hash_map,
     int num)
 {
     std::string file_name, file_hash;
@@ -98,21 +98,21 @@ struct_to_file_name_hash_map(const struct file_name_hash_table* file_name_hash_t
     {
         file_name = "";
         file_hash = "";
-        memcpy(name, file_name_hash_table[i].name, 64);
-        memcpy(hash, file_name_hash_table[i].hash, 64);
+        memcpy(name, file_name_hash_list[i].name, 64);
+        memcpy(hash, file_name_hash_list[i].hash, 64);
         file_name = std::string((char*)name);
         file_hash = std::string((char*)hash);
 
-        file_name_hash[file_name] = file_hash;
+        file_name_hash_map[file_name] = file_hash;
     }
 
 }
 
 std::tuple<struct sync_file_info*, int>
 get_file_info_to_struct(const std::string& directory_path, 
-    const std::map<std::string, std::string>& req_file_name_hash)
+    const std::map<std::string, std::string>& req_file_name_hash_map)
 {
-    int num = req_file_name_hash.size();
+    int num = req_file_name_hash_map.size();
     int file_info_list_size = num * sizeof(struct sync_file_info);
 
     struct sync_file_info* file_info_list;
@@ -122,22 +122,20 @@ get_file_info_to_struct(const std::string& directory_path,
     int i = 0, block_num = 0, len = 0;
     size_t file_size;
     std::string file_path, file_name, file_hash;
-    for (auto it : req_file_name_hash)
+    for (auto it : req_file_name_hash_map)
     {
         file_name = it.first; 
         file_hash = it.second;
         file_path = directory_path + "\\" + file_name;
-        //std::cout << file_path << std::endl;
-        //std::cout << file_name << std::endl;
 
         struct stat statbuf { 0 };
         stat(file_path.c_str(), &statbuf);
         file_size = statbuf.st_size;
 
-        if (file_size % 8000)
-            block_num = file_size / 8000 + 1;
+        if (file_size % FILE_BLOCK_MAX_LENGTH)
+            block_num = file_size / FILE_BLOCK_MAX_LENGTH + 1;
         else
-            block_num = file_size / 8000;
+            block_num = file_size / FILE_BLOCK_MAX_LENGTH;
 
         file_info_list[i].block_total = block_num;
         file_info_list[i].file_total_size = file_size;
@@ -158,44 +156,49 @@ SYNC_C(SOCKET& connect_fd,
     unsigned char* recv_buf,
     const AES_KEY* data_aes_encrypt_key, const AES_KEY* data_aes_decrypt_key, const unsigned char* sync_data_iv)
 {
-    // 发送同步开始包
+    // 发送同步开始操作
     send_sync_start(connect_fd);
 
-    // 更新本地目录文件 hash 表
-    std::map<std::string, std::string> file_name_hash_c;
-    update_file_hash_table(local_directory_path, file_name_hash_c);
-    printf("[+] [ %s ] file hash table:\n", local_directory_path.c_str());
-    show_file_hash_table(file_name_hash_c);
+    // 更新本地目录文件哈希表
+    std::map<std::string, std::string> file_name_hash_c_map;
+    update_file_name_hash_map(local_directory_path, file_name_hash_c_map);
+    printf("[+] [ %s ] file hash table:\n", 
+        local_directory_path.c_str());
+    show_file_name_hash_map(file_name_hash_c_map);
     printf("\n");
 
     // 接收服务器文件哈希表
-    std::map<std::string, std::string> file_name_hash_s;
-    recv_KDATA_HASH_TABLE(connect_fd, file_name_hash_s, recv_buf,
+    std::map<std::string, std::string> file_name_hash_s_map;
+    recv_KDATA_NAME_HASH_LIST(connect_fd, 
+        file_name_hash_s_map, recv_buf,
         data_aes_decrypt_key, sync_data_iv);
-    printf("[+] [ %s ] file hash table:\n", target_directory_path.c_str());
-    show_file_hash_table(file_name_hash_s);
+    printf("[+] [ %s ] file hash table:\n", 
+        target_directory_path.c_str());
+    show_file_name_hash_map(file_name_hash_s_map);
     printf("\n");
 
     // 创建请求文件的哈希表
-    std::map<std::string, std::string> req_file_name_hash;
-    create_req_file_hash_table(file_name_hash_c, file_name_hash_s, req_file_name_hash);
+    std::map<std::string, std::string> req_file_name_hash_map;
+    create_req_file_name_hash_map(file_name_hash_c_map, 
+        file_name_hash_s_map, req_file_name_hash_map);
 
     // 发送请求文件的哈希表
-    send_KDATA_REQ_HASH_TABLE(connect_fd, req_file_name_hash,
+    send_KDATA_REQ_NAME_HASH_LIST(connect_fd, 
+        req_file_name_hash_map,
         data_aes_encrypt_key, sync_data_iv);
 
-    if (req_file_name_hash.size() == 0)
+    if (req_file_name_hash_map.size() == 0)
     {
         printf("\n[+] Synchronized.\n");
     }
     else
     {
         printf("[+] Request file hash table:\n");
-        show_file_hash_table(req_file_name_hash);
+        show_file_name_hash_map(req_file_name_hash_map);
         printf("\n");
 
-        // 接收文件信息
-        size_t num = req_file_name_hash.size();
+        // 建立接收文件的信息表缓冲区
+        size_t num = req_file_name_hash_map.size();
         struct sync_file_info* file_info_list;
         file_info_list = new struct sync_file_info[num];
         memset(file_info_list, 0, num * sizeof(struct sync_file_info));
@@ -206,7 +209,8 @@ SYNC_C(SOCKET& connect_fd,
         for (int i = 0; i < num; i++)
         {
             // 接收文件信息
-            recv_KDATA_FILE_INFO(connect_fd, &file_info_list[i], recv_buf,
+            recv_KDATA_FILE_INFO(connect_fd, 
+                &file_info_list[i], recv_buf,
                 data_aes_decrypt_key, sync_data_iv);
 
             file_size = file_info_list[i].file_total_size;
@@ -217,7 +221,8 @@ SYNC_C(SOCKET& connect_fd,
             for (int j = 0; j < file_info_list[i].block_total; j++)
             {
                 // 接收文件块数据
-                recv_KDATA_FILE_BLOCK(connect_fd, file_data_buf, recv_buf,
+                recv_KDATA_FILE_BLOCK(connect_fd, 
+                    file_data_buf, recv_buf,
                     data_aes_decrypt_key, sync_data_iv);
             }
 
@@ -230,7 +235,7 @@ SYNC_C(SOCKET& connect_fd,
         }
         delete[] file_info_list;
 
-        update_file_hash_table(local_directory_path, file_name_hash_c);
+        update_file_name_hash_map(local_directory_path, file_name_hash_c_map);
         printf("[+] Sync successful!\n");
     }
     printf("\n");
@@ -258,7 +263,8 @@ file_sync_c_fun(SOCKET& connect_fd,
     printf("\n");
 
     // 发送服务器的文件路径
-    send_KDATA_DIR_PATH(connect_fd, target_directory_path,
+    send_KDATA_DIR_PATH(connect_fd, 
+        target_directory_path,
         &data_aes_encrypt_key, sync_data_iv);
 
     // 接收缓冲区
@@ -283,6 +289,7 @@ file_sync_c_fun(SOCKET& connect_fd,
             }
             else
             {
+                // 同步结束操作
                 send_sync_quit(connect_fd);
                 break;
             }   
@@ -306,11 +313,12 @@ send_file_info_and_block_data(SOCKET& accept_fd,
     std::string file_path;
     int file_block_size;
 
-    // 发送文件基本信息和文件块
+    // 发送文件信息和文件块
     for (int i = 0; i < num; i++)
     {
-        // 发送文件基本信息
-        send_KDATA_FILE_INFO(accept_fd, &file_info_list[i],
+        // 发送文件信息
+        send_KDATA_FILE_INFO(accept_fd, 
+            &file_info_list[i],
             data_aes_encrypt_key, sync_data_iv);
 
         // 读取文件数据到缓冲区
@@ -324,13 +332,14 @@ send_file_info_and_block_data(SOCKET& accept_fd,
         for (int file_block_index = 0; file_block_index < file_info_list[i].block_total; file_block_index++)
         {
             if (file_block_index == file_info_list[i].block_total - 1)
-                file_block_size = int(file_size - file_block_index * 8000);
+                file_block_size = int(file_size - file_block_index * FILE_BLOCK_MAX_LENGTH);
             else
-                file_block_size = 8000;
-            file_block = file_data_buf + file_block_index * 8000;
+                file_block_size = FILE_BLOCK_MAX_LENGTH;
+            file_block = file_data_buf + file_block_index * FILE_BLOCK_MAX_LENGTH;
 
-            // 开始发送文件块
-            send_KDATA_FILE_BLOCK(accept_fd, file_block, 
+            // 发送文件块
+            send_KDATA_FILE_BLOCK(accept_fd, 
+                file_block, 
                 file_block_size, file_block_index,
                 data_aes_encrypt_key, sync_data_iv);
         }
@@ -338,12 +347,13 @@ send_file_info_and_block_data(SOCKET& accept_fd,
         delete[] file_data_buf;
     }
     delete[] file_info_list;
+
     printf("[+] Sync successful!\n");
 }
 
 static void
 SYNC_S(SOCKET& accept_fd,
-    const std::string& directory_path, std::map<std::string, std::string> file_name_hash_s,
+    const std::string& directory_path, std::map<std::string, std::string> file_name_hash_s_map,
     unsigned char* recv_buf,
     const AES_KEY* data_aes_encrypt_key, const AES_KEY* data_aes_decrypt_key, const unsigned char* sync_data_iv)
 {
@@ -352,7 +362,7 @@ SYNC_S(SOCKET& accept_fd,
 
     while (true)
     {
-        // 接收客户端的同步请求或者同步结束包
+        // 接收客户端的同步请求或者同步结束操作
         printf("[*] Waiting for client operation...\n\n");
         recv_all(accept_fd, (char*)recv_buf, file_sync_head_size);
         memcpy(&file_sync_head, (struct file_sync*)recv_buf,
@@ -360,31 +370,34 @@ SYNC_S(SOCKET& accept_fd,
 
         if (file_sync_head.type == 5)
         {
-            // 更新哈希表
-            update_file_hash_table(directory_path, file_name_hash_s);
+            // 更新本地文件哈希 map
+            update_file_name_hash_map(directory_path, file_name_hash_s_map);
 
-            // 发送加密的文件 hash 表
-            send_KDATA_HASH_TABLE(accept_fd, file_name_hash_s,
+            // 本地文件哈希 map 转换结构体列表再发送
+            send_KDATA_NAME_HASH_LIST(accept_fd, 
+                file_name_hash_s_map,
                 data_aes_encrypt_key, sync_data_iv);
 
-            // 接收请求文件哈希表
-            std::map<std::string, std::string> req_file_name_hash;
-            recv_KDATA_REQ_HASH_TABLE(accept_fd, req_file_name_hash, recv_buf,
+            // 接收客户端的请求文件结构体列表
+            std::map<std::string, std::string> req_file_name_hash_map;
+            recv_KDATA_REQ_NAME_HASH_LIST(accept_fd, 
+                req_file_name_hash_map, recv_buf,
                 data_aes_decrypt_key, sync_data_iv);
 
-            if (req_file_name_hash.size() == 0)
+            // 如果请求文件哈希 map 为空，说明客户端已经同步完毕
+            if (req_file_name_hash_map.size() == 0)
             {
                 printf("[+] Client synchronized.\n");
             }
             else
             {
                 printf("[+] Request file hash table:\n");
-                show_file_hash_table(req_file_name_hash);
+                show_file_name_hash_map(req_file_name_hash_map);
                 printf("\n");
 
                 // 获取对应文件信息，建立文件信息表
                 std::tuple<struct sync_file_info*, int> file_info_list_info;
-                file_info_list_info = get_file_info_to_struct(directory_path, req_file_name_hash);
+                file_info_list_info = get_file_info_to_struct(directory_path, req_file_name_hash_map);
                 struct sync_file_info* file_info_list = std::get<0>(file_info_list_info);
                 int num, file_info_list_size = std::get<1>(file_info_list_info);
 
@@ -397,6 +410,7 @@ SYNC_S(SOCKET& accept_fd,
                 //    printf("file size: %llu\n", file_info_list[i].file_total_size);
                 //}
 
+                // 发送文件信息和文件块
                 send_file_info_and_block_data(accept_fd,
                     directory_path, file_info_list, num,
                     data_aes_encrypt_key, sync_data_iv);
@@ -437,14 +451,15 @@ file_sync_s_fun(SOCKET& accept_fd,
         recv_buf,
         &data_aes_decrypt_key, sync_data_iv);
 
-    // 根据路径更新文件路径的文件 hash 表
-    std::map<std::string, std::string> file_name_hash_s;
-    update_file_hash_table(directory_path, file_name_hash_s);
+    // 根据路径更新文件路径的文件哈希表
+    std::map<std::string, std::string> file_name_hash_s_map;
+    update_file_name_hash_map(directory_path, file_name_hash_s_map);
     printf("[+] [ %s ] file hash table:\n", directory_path.c_str());
-    show_file_hash_table(file_name_hash_s);
+    show_file_name_hash_map(file_name_hash_s_map);
     printf("\n");
 
-    SYNC_S(accept_fd, directory_path, file_name_hash_s,
+    SYNC_S(accept_fd, 
+        directory_path, file_name_hash_s_map,
         recv_buf,
         &data_aes_encrypt_key, &data_aes_decrypt_key, sync_data_iv);
 

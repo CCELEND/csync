@@ -9,7 +9,7 @@ using namespace std;
 void server_fun()
 {
 	// 创建服务器 socket 该 socket 仅用于监听）
-	SOCKET listen_fd = create_server_socket();	
+	SOCKET listen_fd = create_server_socket();
 	cout << "[*] Server socket create success, waiting connect..." << endl;
 
 	// 等待客户端连接
