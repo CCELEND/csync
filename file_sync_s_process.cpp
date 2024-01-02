@@ -32,7 +32,8 @@ recv_KDATA_DIR_PATH(SOCKET& accept_fd,
             encrypted_directory_path_size, data_aes_decrypt_key, data_iv);
 
         directory_path = std::string((char*)decrypted_directory_path);
-        printf("[+] Synchronized file directory: %s\n\n", directory_path.c_str());
+        printf("[+] Synchronized file directory: %s\n\n", 
+            directory_path.c_str());
 
         delete[] decrypted_directory_path;
     }
@@ -65,7 +66,7 @@ send_KDATA_NAME_HASH_LIST(SOCKET& accept_fd,
     int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
     // 发送 data AES 加密文件哈希表
-    printf("[*] Sending file hash table...\n\n");
+    printf("[*] Sending file name hash list...\n\n");
     send_all(accept_fd, (char*)file_sync_packet, file_sync_packet_size);
 
     delete[] file_name_hash_list;
@@ -82,7 +83,7 @@ recv_KDATA_REQ_NAME_HASH_LIST(SOCKET& accept_fd,
     struct file_sync file_sync_head { 0 };
     int file_sync_head_size = sizeof(struct file_sync);
 
-    printf("[*] Recving request file hash table...\n");
+    printf("[*] Recving request file name hash list...\n");
     recv_all(accept_fd, (char*)recv_buf, file_sync_head_size);
     memcpy(&file_sync_head, (struct file_sync*)recv_buf,
         file_sync_head_size);
@@ -139,7 +140,8 @@ send_KDATA_FILE_INFO(SOCKET& accept_fd,
     int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
     // 发送 data AES 加密文件信息
-    printf("[*] Sending [ %s ] information...\n", file_info->file_name);
+    printf("[*] Sending [ %s ] information...\n", 
+        file_info->file_name);
     send_all(accept_fd, (char*)file_sync_packet, file_sync_packet_size);
 
     delete[] encrypted_file_info;

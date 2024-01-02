@@ -72,7 +72,8 @@ file_name_hash_map_to_struct(const std::map<std::string, std::string>& file_name
     for (auto it : file_name_hash_map)
     {
         len = it.first.length();
-        if (len > 63) return std::make_tuple(nullptr, 0);
+        if (len > 63) 
+            return std::make_tuple(nullptr, 0);
 
         memcpy(file_name_hash_list[i].name, it.first.c_str(), len);
         memcpy(file_name_hash_list[i].hash, it.second.c_str(), 64);
@@ -98,6 +99,7 @@ struct_to_file_name_hash_map(const struct file_name_hash* file_name_hash_list,
     {
         file_name = "";
         file_hash = "";
+
         memcpy(name, file_name_hash_list[i].name, 64);
         memcpy(hash, file_name_hash_list[i].hash, 64);
         file_name = std::string((char*)name);
@@ -139,6 +141,7 @@ get_file_info_to_struct(const std::string& directory_path,
 
         file_info_list[i].block_total = block_num;
         file_info_list[i].file_total_size = file_size;
+
         len = file_name.length();
         memcpy(file_info_list[i].file_name, file_name.c_str(), len);
         memcpy(file_info_list[i].file_hash, file_hash.c_str(), 64);
@@ -162,7 +165,7 @@ SYNC_C(SOCKET& connect_fd,
     // 更新本地目录文件哈希表
     std::map<std::string, std::string> file_name_hash_c_map;
     update_file_name_hash_map(local_directory_path, file_name_hash_c_map);
-    printf("[+] [ %s ] file hash table:\n", 
+    printf("[+] [ %s ] file name hash map:\n", 
         local_directory_path.c_str());
     show_file_name_hash_map(file_name_hash_c_map);
     printf("\n");
@@ -172,7 +175,7 @@ SYNC_C(SOCKET& connect_fd,
     recv_KDATA_NAME_HASH_LIST(connect_fd, 
         file_name_hash_s_map, recv_buf,
         data_aes_decrypt_key, sync_data_iv);
-    printf("[+] [ %s ] file hash table:\n", 
+    printf("[+] [ %s ] file name hash map:\n", 
         target_directory_path.c_str());
     show_file_name_hash_map(file_name_hash_s_map);
     printf("\n");
@@ -193,7 +196,7 @@ SYNC_C(SOCKET& connect_fd,
     }
     else
     {
-        printf("[+] Request file hash table:\n");
+        printf("[+] Request file name hash map:\n");
         show_file_name_hash_map(req_file_name_hash_map);
         printf("\n");
 
@@ -217,7 +220,8 @@ SYNC_C(SOCKET& connect_fd,
             file_data_buf = new unsigned char[file_size];
             memset(file_data_buf, 0, file_size);
 
-            printf("[*] Recving [ %s ] file block...\n", file_info_list[i].file_name);
+            printf("[*] Recving [ %s ] file block...\n", 
+                file_info_list[i].file_name);
             for (int j = 0; j < file_info_list[i].block_total; j++)
             {
                 // 接收文件块数据
@@ -227,7 +231,8 @@ SYNC_C(SOCKET& connect_fd,
             }
 
             // 保存文件
-            printf("[*] Saving [ %s ] file...\n", file_info_list[i].file_name);
+            printf("[*] Saving [ %s ] file...\n", 
+                file_info_list[i].file_name);
             file_path = local_directory_path + "\\" + std::string((char*)file_info_list[i].file_name);
             save_data_to_file(file_path.c_str(), file_data_buf, file_size);
 
@@ -256,7 +261,7 @@ file_sync_c_fun(SOCKET& connect_fd,
     std::getline(std::cin, local_directory_path);
     printf("\n");
 
-    // 输入服务器文件路径并加密发送
+    // 输入服务器文件路径
     std::string target_directory_path;
     printf("Enter the directory path of the synchronization target >> ");
     std::getline(std::cin, target_directory_path);
@@ -328,7 +333,8 @@ send_file_info_and_block_data(SOCKET& accept_fd,
         file_data_buf = std::get<0>(file_info);
         file_size = std::get<1>(file_info);
 
-        printf("[*] Sending [ %s ] file block...\n", file_info_list[i].file_name);
+        printf("[*] Sending [ %s ] file block...\n", 
+            file_info_list[i].file_name);
         for (int file_block_index = 0; file_block_index < file_info_list[i].block_total; file_block_index++)
         {
             if (file_block_index == file_info_list[i].block_total - 1)
@@ -391,7 +397,7 @@ SYNC_S(SOCKET& accept_fd,
             }
             else
             {
-                printf("[+] Request file hash table:\n");
+                printf("[+] Request file name hash map:\n");
                 show_file_name_hash_map(req_file_name_hash_map);
                 printf("\n");
 
@@ -454,7 +460,8 @@ file_sync_s_fun(SOCKET& accept_fd,
     // 根据路径更新文件路径的文件哈希表
     std::map<std::string, std::string> file_name_hash_s_map;
     update_file_name_hash_map(directory_path, file_name_hash_s_map);
-    printf("[+] [ %s ] file hash table:\n", directory_path.c_str());
+    printf("[+] [ %s ] file name hash map:\n", 
+        directory_path.c_str());
     show_file_name_hash_map(file_name_hash_s_map);
     printf("\n");
 

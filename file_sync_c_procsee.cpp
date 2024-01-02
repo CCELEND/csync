@@ -43,14 +43,15 @@ recv_KDATA_NAME_HASH_LIST(SOCKET& connect_fd,
     struct file_sync file_sync_head { 0 };
     int file_sync_head_size = sizeof(struct file_sync);
 
-    printf("[*] Recving file hash table...\n");
+    printf("[*] Recving file name hash list...\n");
     recv_all(connect_fd, (char*)recv_buf, file_sync_head_size);
     memcpy(&file_sync_head, (struct file_sync*)recv_buf,
         file_sync_head_size);
 
     if (file_sync_head.type == 6)
     {
-        int file_name_hash_list_size, encrypted_file_name_hash_list_size;
+        int file_name_hash_list_size;
+        int encrypted_file_name_hash_list_size;
         file_name_hash_list_size = file_sync_head.raw_size;
         encrypted_file_name_hash_list_size = file_sync_head.encrypted_size;
 
@@ -102,7 +103,7 @@ send_KDATA_REQ_NAME_HASH_LIST(SOCKET& connect_fd,
     int file_sync_packet_size = std::get<1>(file_sync_packet_info);
 
     // 发送 data AES 加密缺少的文件哈希表
-    printf("[*] Sending request file hash table...\n");
+    printf("[*] Sending request file name hash list...\n");
     send_all(connect_fd, (char*)file_sync_packet, file_sync_packet_size);
 
     delete[] file_name_hash_list;
@@ -126,7 +127,8 @@ recv_KDATA_FILE_INFO(SOCKET& connect_fd,
 
     if (file_sync_head.type == 8)
     {
-        int file_info_size, encrypted_file_info_size;
+        int file_info_size;
+        int encrypted_file_info_size;
         file_info_size = file_sync_head.raw_size;
         encrypted_file_info_size = file_sync_head.encrypted_size;
 

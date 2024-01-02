@@ -124,5 +124,3 @@ void send_KDATA_FILE_BLOCK(SOCKET& accept_fd,
 	const unsigned char* file_block,
 	const int file_block_size, const int file_block_index,
 	const AES_KEY* data_aes_encrypt_key, const unsigned char* data_iv);
-
-
