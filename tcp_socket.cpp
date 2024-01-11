@@ -3,13 +3,15 @@
 
 using namespace std;
 
-void err(string errMsg)
+void 
+err(string errMsg)
 {
 	cout << errMsg << " failed! code: " << WSAGetLastError() << " line: " << __LINE__ << endl;
 }
 
 // 初始化网络库，打开网络库/启动网络库，启动了这个库，这个库里的函数/功能才能使用
-bool init_socket_lib()
+bool 
+init_socket_lib()
 {
 	// 初始化代码
 	WORD wVersion = MAKEWORD(2, 2);
@@ -26,7 +28,8 @@ bool init_socket_lib()
 }
 
 // 关闭
-bool close_socket_lib()
+bool 
+close_socket_lib()
 {
 	if (WSACleanup())
 	{
@@ -37,7 +40,8 @@ bool close_socket_lib()
 }
 
 
-bool send_all(SOCKET& sock, char* buffer, int size)
+bool 
+send_all(SOCKET& sock, char* buffer, int size)
 {
 	while (size > 0)
 	{
@@ -46,13 +50,14 @@ bool send_all(SOCKET& sock, char* buffer, int size)
 			return false;
 
 		size = size - SendSize; //用于循环发送且退出功能
-		buffer += SendSize;    //用于计算已发buffer的偏移量
+		buffer += SendSize;     //用于计算已发 buffer 的偏移量
 	}
 
 	return true;
 }
 
-bool recv_all(SOCKET& sock, char* buffer, int size)
+bool 
+recv_all(SOCKET& sock, char* buffer, int size)
 {
 	while (size > 0)//剩余部分大于0
 	{
@@ -67,7 +72,8 @@ bool recv_all(SOCKET& sock, char* buffer, int size)
 	return true;
 }
 
-SOCKET create_server_socket()
+SOCKET 
+create_server_socket()
 {
 	//1.创建一个空的 socket
 		// socket()无错误发生则返回引用新套接口的描述字，否则返回 INVALID_SOCKET 错误
@@ -100,7 +106,8 @@ SOCKET create_server_socket()
 }
 
 
-SOCKET create_client_socket(const char* ip)
+SOCKET 
+create_client_socket(const char* ip)
 {
 	//1.创建一个空的socket
 		// socket() 无错误发生则返回引用新套接口的描述字，否则返回 INVALID_SOCKET 错误

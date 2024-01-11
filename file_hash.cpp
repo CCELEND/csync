@@ -1,7 +1,7 @@
 #include "file_hash.h"
 namespace fs = std::filesystem;
 
-// 指定目录路径建立哈希表
+// 指定目录路径建立哈希 map
 void 
 update_file_name_hash_map(const std::string directory_path, 
     std::map<std::string, std::string>& file_name_hash_map)

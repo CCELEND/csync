@@ -156,7 +156,8 @@ key_agreement_s_fun(SOCKET& accept_fd,
     std::string pub_key;
 
     // 接收来自客户端的 root AES 加密的公钥
-    recv_KROOT_PUB_KEY(accept_fd, pub_key, recv_buf, &root_aes_decrypt_key, root_iv);
+    recv_KROOT_PUB_KEY(accept_fd, 
+        pub_key, recv_buf, &root_aes_decrypt_key, root_iv);
 
     // 生成随机序列
     unsigned char randoms[0x10];
@@ -201,7 +202,7 @@ key_agreement_s_fun(SOCKET& accept_fd,
     }
     std::cout << std::endl;
 
-    // 发送公钥加密的 data kry 和 IV
+    // 发送公钥加密的 data key 和 IV
     send_PUB_KEY_KDATA_KIV(accept_fd, data_key, data_iv, pub_key);
 
     memcpy(sync_data_key, data_key, data_key_bytes_length);

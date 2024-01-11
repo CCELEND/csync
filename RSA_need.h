@@ -18,10 +18,6 @@
 #define PRI_KEY_FILE "public_key.pem"     // Ë½Ô¿Â·¾¶
 
 void generate_rsa_key(std::string& out_pub_key, std::string& out_pri_key);
-std::string rsa_pub_decrypt(const std::string& cipher_text, const std::string& pub_key);
-std::string rsa_pub_encrypt(const std::string& clear_text, const std::string& pub_key);
-std::string rsa_pri_encrypt(const std::string& clear_text, std::string& pri_key);
-std::string rsa_pri_decrypt(const std::string& cipher_text, const std::string& pri_key);
 
 void RSA_pri_decrypt(const unsigned char* encrypted_data, unsigned char* decrypted_data, 
 	const std::string& pri_key, int encrypted_data_length);

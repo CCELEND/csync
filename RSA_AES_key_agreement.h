@@ -10,7 +10,7 @@ struct key_agreement_c
 	int raw_data_size;
 	int encrypted_data_size;
 };
-// 2: 随机序列, 3: 随机 AES 数据密钥和初始向量 IV
+// 2: 随机序列, 3: AES 数据 key 和初始向量 IV
 struct key_agreement_s
 {
 	int s_type;

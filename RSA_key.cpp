@@ -2,7 +2,8 @@
 #include "RSA_need.h"
 
 // 创建密钥对：私钥和公钥
-void generate_rsa_key(std::string& out_pub_key, std::string& out_pri_key)
+void 
+generate_rsa_key(std::string& out_pub_key, std::string& out_pri_key)
 {
 	size_t pri_len = 0; // 私钥长度
 	size_t pub_len = 0; // 公钥长度

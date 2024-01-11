@@ -162,7 +162,7 @@ SYNC_C(SOCKET& connect_fd,
     // 发送同步开始操作
     send_sync_start(connect_fd);
 
-    // 更新本地目录文件哈希表
+    // 更新本地目录文件哈希 map
     std::map<std::string, std::string> file_name_hash_c_map;
     update_file_name_hash_map(local_directory_path, file_name_hash_c_map);
     printf("[+] [ %s ] file name hash map:\n", 
@@ -170,7 +170,7 @@ SYNC_C(SOCKET& connect_fd,
     show_file_name_hash_map(file_name_hash_c_map);
     printf("\n");
 
-    // 接收服务器文件哈希表
+    // 接收服务器文件哈希 map
     std::map<std::string, std::string> file_name_hash_s_map;
     recv_KDATA_NAME_HASH_LIST(connect_fd, 
         file_name_hash_s_map, recv_buf,
@@ -180,12 +180,12 @@ SYNC_C(SOCKET& connect_fd,
     show_file_name_hash_map(file_name_hash_s_map);
     printf("\n");
 
-    // 创建请求文件的哈希表
+    // 创建请求文件的哈希 map
     std::map<std::string, std::string> req_file_name_hash_map;
     create_req_file_name_hash_map(file_name_hash_c_map, 
         file_name_hash_s_map, req_file_name_hash_map);
 
-    // 发送请求文件的哈希表
+    // 发送请求文件的哈希 map
     send_KDATA_REQ_NAME_HASH_LIST(connect_fd, 
         req_file_name_hash_map,
         data_aes_encrypt_key, sync_data_iv);
@@ -457,7 +457,7 @@ file_sync_s_fun(SOCKET& accept_fd,
         recv_buf,
         &data_aes_decrypt_key, sync_data_iv);
 
-    // 根据路径更新文件路径的文件哈希表
+    // 根据同步路径更新文件路径的文件哈希 map
     std::map<std::string, std::string> file_name_hash_s_map;
     update_file_name_hash_map(directory_path, file_name_hash_s_map);
     printf("[+] [ %s ] file name hash map:\n", 

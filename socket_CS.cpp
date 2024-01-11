@@ -6,7 +6,8 @@
 
 using namespace std;
 
-void server_fun()
+void 
+server_fun()
 {
 	// 创建服务器 socket 该 socket 仅用于监听）
 	SOCKET listen_fd = create_server_socket();
@@ -39,7 +40,8 @@ void server_fun()
 	closesocket(listen_fd);
 }
 
-void client_fun()
+void 
+client_fun()
 {
 	string ip;
 	printf("Enter target ip address >> ");
